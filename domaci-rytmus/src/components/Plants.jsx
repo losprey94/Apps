@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Droplets, Plus, Trash2, Leaf, X } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useSyncedStorage } from '../context/SyncContext'
 import { useHistory } from '../hooks/useHistory'
 
 const DEFAULT_PLANTS = [
@@ -32,7 +33,7 @@ const STATUS = {
 }
 
 export default function Plants() {
-  const [plants, setPlants] = useLocalStorage('plants', DEFAULT_PLANTS)
+  const [plants, setPlants] = useSyncedStorage('plants', DEFAULT_PLANTS)
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [emoji, setEmoji] = useState('🪴')

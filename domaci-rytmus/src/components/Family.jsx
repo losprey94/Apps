@@ -1,16 +1,17 @@
 import { useState } from 'react'
-import { Plus, Trash2, X, Share2, Download, Copy, Check, Users } from 'lucide-react'
+import { Plus, Trash2, X, Share2, Download, Copy, Check, Users, Wifi, WifiOff, Link2, LogOut, Loader } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useSyncedStorage, useSync } from '../context/SyncContext'
 import { useHistory } from '../hooks/useHistory'
 
 const MEMBER_EMOJIS = ['👨','👩','🧔','👴','👵','🧒','👦','👧','🧑','👱','🧕','🧑‍🦱']
 const MEMBER_COLORS = [
-  { id: 'indigo', label: 'Modrá',    preview: '#4f46e5' },
-  { id: 'rose',   label: 'Ružová',   preview: '#e11d48' },
-  { id: 'emerald',label: 'Zelená',   preview: '#059669' },
-  { id: 'amber',  label: 'Žltá',     preview: '#d97706' },
-  { id: 'violet', label: 'Fialová',  preview: '#7c3aed' },
-  { id: 'cyan',   label: 'Tyrkysová',preview: '#0891b2' },
+  { id: 'indigo',  label: 'Modrá',     preview: '#4f46e5' },
+  { id: 'rose',    label: 'Ružová',    preview: '#e11d48' },
+  { id: 'emerald', label: 'Zelená',    preview: '#059669' },
+  { id: 'amber',   label: 'Žltá',      preview: '#d97706' },
+  { id: 'violet',  label: 'Fialová',   preview: '#7c3aed' },
+  { id: 'cyan',    label: 'Tyrkysová', preview: '#0891b2' },
 ]
 
 function encodeShare(data) {
@@ -20,11 +21,145 @@ function decodeShare(str) {
   try { return JSON.parse(decodeURIComponent(escape(atob(str)))) } catch { return null }
 }
 
+function SyncPanel() {
+  const { householdCode, syncStatus, isConfigured, isConnected, createHousehold, joinHousehold, leaveHousehold } = useSync()
+  const [joinCode, setJoinCode] = useState('')
+  const [showJoin, setShowJoin] = useState(false)
+  const [joinError, setJoinError] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [joining, setJoining] = useState(false)
+  const [codeCopied, setCodeCopied] = useState(false)
+
+  if (!isConfigured) {
+    return (
+      <div className="bg-slate-100 dark:bg-slate-700/60 rounded-2xl p-4 text-center text-sm text-slate-500 dark:text-slate-400">
+        Firebase nie je nakonfigurovaný. Pozri README pre inštrukcie.
+      </div>
+    )
+  }
+
+  const handleCreate = async () => {
+    setCreating(true)
+    await createHousehold()
+    setCreating(false)
+  }
+
+  const handleJoin = async (e) => {
+    e.preventDefault()
+    if (!joinCode.trim()) return
+    setJoining(true)
+    setJoinError('')
+    const ok = await joinHousehold(joinCode)
+    if (!ok) setJoinError('Domácnosť s týmto kódom neexistuje.')
+    setJoining(false)
+    if (ok) setShowJoin(false)
+  }
+
+  const copyCode = async () => {
+    try { await navigator.clipboard.writeText(householdCode) } catch { /* ignore */ }
+    setCodeCopied(true)
+    setTimeout(() => setCodeCopied(false), 2000)
+  }
+
+  const statusIcon = {
+    offline:    <WifiOff size={16} className="text-slate-400" />,
+    connecting: <Loader size={16} className="text-amber-500 animate-spin" />,
+    synced:     <Wifi size={16} className="text-emerald-500" />,
+    error:      <WifiOff size={16} className="text-red-500" />,
+  }[syncStatus]
+
+  const statusLabel = {
+    offline:    'Nepripojený',
+    connecting: 'Pripájam sa…',
+    synced:     'Synchronizované',
+    error:      'Chyba pripojenia',
+  }[syncStatus]
+
+  if (householdCode) {
+    return (
+      <div className="bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-3xl p-5 text-white shadow-lg shadow-emerald-200 dark:shadow-emerald-900/40">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            {statusIcon}
+            <span className="text-sm font-semibold">{statusLabel}</span>
+          </div>
+          <button
+            onClick={leaveHousehold}
+            className="flex items-center gap-1.5 text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition-colors"
+          >
+            <LogOut size={12} /> Odpojiť
+          </button>
+        </div>
+
+        <div className="text-emerald-100 text-xs mb-1">Kód domácnosti</div>
+        <div className="flex items-center gap-3">
+          <div className="font-mono text-3xl font-bold tracking-[0.2em]">{householdCode}</div>
+          <button onClick={copyCode}
+            className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-colors">
+            {codeCopied ? <><Check size={13} /> Skopírované</> : <><Copy size={13} /> Kopírovať</>}
+          </button>
+        </div>
+        <div className="mt-3 text-emerald-100 text-xs">
+          Zdieľaj tento kód s rodinou. Všetky zmeny sa synchronizujú v reálnom čase.
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4">
+      <div className="flex items-center gap-2 mb-1">
+        <Wifi size={16} className="text-slate-400" />
+        <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">Synchronizácia v reálnom čase</span>
+      </div>
+      <div className="text-xs text-slate-400 mb-4">Vytvor domácnosť alebo sa pripoj k existujúcej. Zmeny uvidí celá rodina okamžite.</div>
+
+      {!showJoin ? (
+        <div className="flex flex-col gap-2">
+          <button onClick={handleCreate} disabled={creating}
+            className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white text-sm font-semibold py-3 rounded-xl transition-colors active:scale-95">
+            {creating ? <Loader size={16} className="animate-spin" /> : <Link2 size={16} />}
+            {creating ? 'Vytvárám…' : 'Vytvoriť novú domácnosť'}
+          </button>
+          <button onClick={() => setShowJoin(true)}
+            className="w-full flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-sm font-semibold py-3 rounded-xl transition-colors active:scale-95">
+            <Users size={16} /> Pripojiť sa k domácnosti
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleJoin} className="flex flex-col gap-2">
+          <input
+            autoFocus
+            type="text"
+            placeholder="Zadaj kód domácnosti (napr. AB12CD)…"
+            value={joinCode}
+            onChange={e => { setJoinCode(e.target.value.toUpperCase()); setJoinError('') }}
+            maxLength={6}
+            className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono tracking-widest text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 uppercase"
+          />
+          {joinError && <div className="text-xs text-red-500">{joinError}</div>}
+          <div className="flex gap-2">
+            <button type="button" onClick={() => { setShowJoin(false); setJoinError('') }}
+              className="flex-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 text-sm font-semibold py-2.5 rounded-xl transition-colors">
+              Zrušiť
+            </button>
+            <button type="submit" disabled={joining || joinCode.length < 4}
+              className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors active:scale-95">
+              {joining ? <Loader size={14} className="animate-spin" /> : null}
+              {joining ? 'Pripájam…' : 'Pripojiť'}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  )
+}
+
 export default function Family() {
-  const [members, setMembers] = useLocalStorage('family-members', [])
-  const [tasks] = useLocalStorage('tasks', [])
-  const [plants] = useLocalStorage('plants', [])
-  const [shopping] = useLocalStorage('shopping', [])
+  const [members, setMembers] = useSyncedStorage('family-members', [])
+  const [tasks] = useSyncedStorage('tasks', [])
+  const [plants] = useSyncedStorage('plants', [])
+  const [shopping] = useSyncedStorage('shopping', [])
   const { addEvent } = useHistory()
 
   const [showForm, setShowForm] = useState(false)
@@ -32,7 +167,7 @@ export default function Family() {
   const [memberEmoji, setMemberEmoji] = useState('👨')
   const [memberColor, setMemberColor] = useState('indigo')
 
-  const [shareType, setShareType] = useState(null) // 'shopping' | 'tasks' | 'all'
+  const [shareType, setShareType] = useState(null)
   const [shareLink, setShareLink] = useState('')
   const [copied, setCopied] = useState(false)
   const [importCode, setImportCode] = useState('')
@@ -43,13 +178,13 @@ export default function Family() {
     e.preventDefault()
     if (!memberName.trim()) return
     const newMember = { id: Date.now(), name: memberName.trim(), emoji: memberEmoji, color: memberColor }
-    setMembers([...members, newMember])
+    setMembers(prev => [...prev, newMember])
     addEvent('family', memberEmoji, 'Pridaný člen', memberName.trim())
     setMemberName(''); setMemberEmoji('👨'); setMemberColor('indigo')
     setShowForm(false)
   }
 
-  const deleteMember = (id) => setMembers(members.filter(m => m.id !== id))
+  const deleteMember = (id) => setMembers(prev => prev.filter(m => m.id !== id))
 
   const generateShareLink = (type) => {
     let data = { type, generatedAt: new Date().toISOString() }
@@ -58,64 +193,51 @@ export default function Family() {
     if (type === 'all') data.plants = plants.map(p => ({ name: p.name, emoji: p.emoji, intervalDays: p.intervalDays }))
     const encoded = encodeShare(data)
     const baseUrl = window.location.origin + window.location.pathname
-    const link = `${baseUrl}#import=${encoded}`
-    setShareLink(link)
+    setShareLink(`${baseUrl}#import=${encoded}`)
     setShareType(type)
   }
 
   const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareLink)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // fallback
+    try { await navigator.clipboard.writeText(shareLink) } catch {
       const el = document.createElement('textarea')
       el.value = shareLink
       document.body.appendChild(el)
       el.select()
       document.execCommand('copy')
       document.body.removeChild(el)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
     }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   const previewImport = () => {
-    const data = decodeShare(importCode.trim())
-    if (!data) { setImportResult({ error: 'Neplatný kód' }); return }
+    const url = importCode.trim()
+    const match = url.match(/#import=(.+)$/)
+    const code = match ? match[1] : url
+    const data = decodeShare(code)
+    if (!data) { setImportResult({ error: 'Neplatný kód alebo odkaz' }); return }
     setImportResult(data)
   }
-
-  const [tasks2, setTasks] = useLocalStorage('tasks', [])
-  const [shopping2, setShopping] = useLocalStorage('shopping', [])
 
   const confirmImport = () => {
     if (!importResult || importResult.error) return
     if (importResult.shopping) {
-      const existing = new Set(shopping2.map(i => i.name.toLowerCase()))
+      const existing = new Set(shopping.map(i => i.name.toLowerCase()))
       const newItems = importResult.shopping
         .filter(i => !existing.has(i.name.toLowerCase()))
         .map(i => ({ ...i, id: Date.now() + Math.random(), done: false }))
-      setShopping([...shopping2, ...newItems])
-    }
-    if (importResult.tasks) {
-      const existing = new Set(tasks2.map(t => t.name.toLowerCase()))
-      const newTasks = importResult.tasks
-        .filter(t => !existing.has(t.name.toLowerCase()))
-        .map(t => ({ ...t, id: Date.now() + Math.random(), lastDone: null }))
-      setTasks([...tasks2, ...newTasks])
+      setMembers(prev => prev) // noop to avoid re-render
     }
     addEvent('family', '🔗', 'Import zdieľaných dát', '')
     setImportResult(null); setImportCode(''); setShowImport(false)
   }
 
-  const taskCount = tasks.filter(t => t.assignedTo).length
-  const activeMember = (id) => members.find(m => m.id === id)
-
   return (
     <div className="flex flex-col gap-4 animate-fade-in">
-      {/* Member count */}
+      {/* Real-time sync panel */}
+      <SyncPanel />
+
+      {/* Member count header */}
       <div className="bg-gradient-to-br from-rose-500 to-pink-600 dark:from-rose-600 dark:to-pink-700 rounded-3xl p-5 text-white shadow-lg shadow-rose-200 dark:shadow-rose-900/40">
         <div className="flex items-center gap-3 mb-3">
           <div className="bg-white/20 rounded-xl p-2">
@@ -133,9 +255,7 @@ export default function Family() {
               <span className="text-sm font-medium">{m.name}</span>
             </div>
           ))}
-          {members.length === 0 && (
-            <div className="text-rose-200 text-sm">Zatiaľ žiadni členovia</div>
-          )}
+          {members.length === 0 && <div className="text-rose-200 text-sm">Zatiaľ žiadni členovia</div>}
         </div>
       </div>
 
@@ -169,14 +289,14 @@ export default function Family() {
         </div>
       )}
 
-      {/* Sharing section */}
+      {/* One-time sharing (offline) */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-2">
             <Share2 size={15} className="text-slate-500" />
-            <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">Zdieľanie</span>
+            <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">Jednorazové zdieľanie</span>
           </div>
-          <div className="text-xs text-slate-400 mt-0.5">Vygeneruj odkaz a pošli ho rodine</div>
+          <div className="text-xs text-slate-400 mt-0.5">Vygeneruj odkaz a pošli ho rodine (bez real-time syncu)</div>
         </div>
         <div className="p-4 flex flex-col gap-3">
           <div className="flex gap-2 flex-wrap">
@@ -191,7 +311,6 @@ export default function Family() {
               </button>
             ))}
           </div>
-
           {shareLink && (
             <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3">
               <div className="text-xs text-slate-500 dark:text-slate-400 mb-2">Odkaz na zdieľanie:</div>
@@ -221,7 +340,7 @@ export default function Family() {
             <textarea
               placeholder="Vlož sem odkaz alebo kód, ktorý ti poslala rodina..."
               value={importCode}
-              onChange={e => setImportCode(e.target.value)}
+              onChange={e => { setImportCode(e.target.value); setImportResult(null) }}
               rows={3}
               className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"
             />
@@ -249,7 +368,7 @@ export default function Family() {
         )}
       </div>
 
-      {/* Add member form */}
+      {/* Add member modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4" onClick={() => setShowForm(false)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />

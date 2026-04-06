@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CheckSquare, Leaf, ShoppingCart, Home, Grid3x3, ChevronLeft } from 'lucide-react'
+import { CheckSquare, Leaf, ShoppingCart, Home, Grid3x3, ChevronLeft, Cloud, CloudOff, Loader } from 'lucide-react'
 import Tasks from './components/Tasks'
 import Plants from './components/Plants'
 import Shopping from './components/Shopping'
@@ -12,6 +12,7 @@ import History from './components/History'
 import Family from './components/Family'
 import More from './components/More'
 import { ThemeProvider, THEMES } from './context/ThemeContext'
+import { SyncProvider, useSync } from './context/SyncContext'
 import { useLocalStorage } from './hooks/useLocalStorage'
 
 function getDaysSince(dateStr) {
@@ -53,14 +54,40 @@ function getTabColors(colorKey) {
   return TAB_COLORS[colorKey] || TAB_COLORS.slate
 }
 
+function SyncIndicator() {
+  const { syncStatus, householdCode } = useSync()
+  if (!householdCode) return null
+  if (syncStatus === 'synced') return (
+    <div className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl px-2 py-1" title="Synchronizované">
+      <Cloud size={13} />
+      <span className="text-[10px] font-semibold hidden sm:inline">Sync</span>
+    </div>
+  )
+  if (syncStatus === 'connecting') return (
+    <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/30 text-amber-500 rounded-xl px-2 py-1" title="Pripájam sa…">
+      <Loader size={13} className="animate-spin" />
+    </div>
+  )
+  if (syncStatus === 'error') return (
+    <div className="flex items-center gap-1 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-xl px-2 py-1" title="Chyba syncu">
+      <CloudOff size={13} />
+    </div>
+  )
+  return null
+}
+
 function AppInner() {
   const [activeTab, setActiveTab] = useLocalStorage('active-tab', 'home')
   const [subPage, setSubPage] = useState(null)
   const [darkMode] = useLocalStorage('dark-mode', false)
   const [colorTheme] = useLocalStorage('color-theme', 'indigo')
-  const [tasks] = useLocalStorage('tasks', [])
-  const [plants] = useLocalStorage('plants', [])
-  const [shopping] = useLocalStorage('shopping', [])
+  const { isConnected, householdData } = useSync()
+  const [localTasks] = useLocalStorage('tasks', [])
+  const [localPlants] = useLocalStorage('plants', [])
+  const [localShopping] = useLocalStorage('shopping', [])
+  const tasks    = (isConnected && householdData?.tasks)    ? householdData.tasks    : localTasks
+  const plants   = (isConnected && householdData?.plants)   ? householdData.plants   : localPlants
+  const shopping = (isConnected && householdData?.shopping) ? householdData.shopping : localShopping
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
@@ -128,6 +155,7 @@ function AppInner() {
               {!subPage && <div className="text-[10px] font-medium text-slate-400 leading-none mb-0.5">Domáci Rytmus</div>}
               <h1 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-tight">{headerTitle}</h1>
             </div>
+            <SyncIndicator />
             {taskBadge + plantBadge > 0 && activeTab === 'home' && !subPage && (
               <div className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                 {taskBadge + plantBadge} čaká
@@ -174,7 +202,9 @@ function AppInner() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AppInner />
+      <SyncProvider>
+        <AppInner />
+      </SyncProvider>
     </ThemeProvider>
   )
 }

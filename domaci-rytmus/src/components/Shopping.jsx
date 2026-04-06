@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Trash2, Check, ShoppingCart, X, ChevronDown, ChevronRight } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useSyncedStorage } from '../context/SyncContext'
 
 const CATEGORIES = [
   { id: 'zelenina', label: 'Zelenina & Ovocie', emoji: '🥦' },
@@ -23,7 +24,7 @@ const SUGGESTIONS = {
 }
 
 export default function Shopping() {
-  const [items, setItems] = useLocalStorage('shopping', [])
+  const [items, setItems] = useSyncedStorage('shopping', [])
   const [input, setInput] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('ostatne')
   const [quantity, setQuantity] = useState('1')

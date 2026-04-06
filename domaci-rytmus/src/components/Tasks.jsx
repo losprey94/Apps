@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CheckCircle2, Plus, Trash2, Clock, AlertCircle, CheckCheck, X, ChevronDown } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useSyncedStorage } from '../context/SyncContext'
 import { useHistory } from '../hooks/useHistory'
 
 const DEFAULT_TASKS = [
@@ -31,8 +32,8 @@ const STATUS_CONFIG = {
 }
 
 export default function Tasks() {
-  const [tasks, setTasks] = useLocalStorage('tasks', DEFAULT_TASKS)
-  const [members] = useLocalStorage('family-members', [])
+  const [tasks, setTasks] = useSyncedStorage('tasks', DEFAULT_TASKS)
+  const [members] = useSyncedStorage('family-members', [])
   const { addEvent } = useHistory()
 
   const [showForm, setShowForm] = useState(false)
