@@ -6,12 +6,23 @@
 
 * {
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html {
+  background-color: #f8fafc;
+}
+
+html.dark {
+  background-color: #0f172a;
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  background-color: inherit;
 }
 
 #root {
@@ -24,11 +35,9 @@ body {
   .animate-fade-in {
     animation: fadeIn 0.25s ease-out;
   }
-
   .animate-slide-up {
     animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
-
   .animate-pop {
     animation: pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
