@@ -1,4 +1,4 @@
-import { CheckCircle2, Droplets, ShoppingCart, AlertCircle, Clock, ChevronRight, Leaf, Sparkles } from 'lucide-react'
+import { CheckCircle2, Droplets, ShoppingCart, AlertCircle, ChevronRight, Leaf } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
 function getDaysSince(dateStr) {
@@ -30,9 +30,15 @@ function getGreeting() {
 }
 
 function formatDate() {
-  return new Date().toLocaleDateString('sk-SK', {
-    weekday: 'long', day: 'numeric', month: 'long'
-  })
+  try {
+    return new Date().toLocaleDateString('sk-SK', {
+      weekday: 'long', day: 'numeric', month: 'long',
+    })
+  } catch {
+    return new Date().toLocaleDateString(undefined, {
+      weekday: 'long', day: 'numeric', month: 'long',
+    })
+  }
 }
 
 export default function Dashboard({ onNavigate }) {
