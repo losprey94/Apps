@@ -1,5 +1,8 @@
-import { CheckCircle2, Droplets, ShoppingCart, AlertCircle, ChevronRight, Leaf, Zap } from 'lucide-react'
+import { useState } from 'react'
+import { CheckCircle2, Droplets, ShoppingCart, AlertCircle, ChevronRight, Leaf, Zap, CreditCard } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useSyncedStorage } from '../context/SyncContext'
+import { CardViewer } from './LoyaltyCards'
 
 const QUOTES = [
   'Malé kroky každý deň vedú k veľkým zmenám.',
@@ -50,6 +53,8 @@ export default function Dashboard({ onNavigate, onWaterPlant, onCompleteTask }) 
   const [userName] = useLocalStorage('user-name', '')
   const [userEmoji] = useLocalStorage('user-emoji', '😊')
   const [showQuotes] = useLocalStorage('show-quotes', true)
+  const [loyaltyCards] = useSyncedStorage('loyalty-cards', [])
+  const [viewCard, setViewCard] = useState(null)
 
   const urgentTasks = tasks.filter(t => ['overdue', 'pending'].includes(getTaskStatus(t)))
   const thirstyPlants = plants.filter(p => getPlantStatus(p) === 'thirsty')
@@ -67,8 +72,12 @@ export default function Dashboard({ onNavigate, onWaterPlant, onCompleteTask }) 
     setTasks(tasks.map(t => t.id === taskId ? { ...t, lastDone: new Date().toISOString() } : t))
   }
 
+  const pinnedCards = loyaltyCards.filter(c => c.pinned)
+
   return (
     <div className="flex flex-col gap-4 animate-fade-in">
+      {viewCard && <CardViewer card={viewCard} onClose={() => setViewCard(null)} />}
+
       {/* Greeting */}
       <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 dark:from-indigo-700 dark:to-indigo-900 rounded-3xl p-5 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40">
         <div className="flex items-start justify-between">
@@ -100,6 +109,40 @@ export default function Dashboard({ onNavigate, onWaterPlant, onCompleteTask }) 
           </button>
         </div>
       </div>
+
+      {/* Pinned loyalty cards — quick access */}
+      {pinnedCards.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 dark:border-slate-700">
+            <div className="flex items-center gap-2">
+              <CreditCard size={14} className="text-amber-500" />
+              <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Rýchle karty</span>
+            </div>
+            <button onClick={() => onNavigate('shopping')} className="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-0.5">
+              Všetky <ChevronRight size={13} />
+            </button>
+          </div>
+          <div className="flex gap-3 p-4">
+            {pinnedCards.map(card => (
+              <button
+                key={card.id}
+                onClick={() => setViewCard(card)}
+                className="flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl active:scale-95 transition-transform"
+                style={{ backgroundColor: card.color + '15', border: `2px solid ${card.color}30` }}
+              >
+                <span className="text-3xl">{card.emoji}</span>
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{card.storeName}</span>
+                <span
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white"
+                  style={{ backgroundColor: card.color }}
+                >
+                  QR kód
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* All good */}
       {allGood && (

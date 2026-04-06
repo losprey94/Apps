@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Plus, Trash2, Check, ShoppingCart, X, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, Check, ShoppingCart, X, ChevronDown, ChevronRight, CreditCard } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useSyncedStorage } from '../context/SyncContext'
+import LoyaltyCards from './LoyaltyCards'
 
 const CATEGORIES = [
   { id: 'zelenina', label: 'Zelenina & Ovocie', emoji: '🥦' },
@@ -23,7 +24,7 @@ const SUGGESTIONS = {
   ostatne: [],
 }
 
-export default function Shopping() {
+function ShoppingList() {
   const [items, setItems] = useSyncedStorage('shopping', [])
   const [input, setInput] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('ostatne')
@@ -314,6 +315,41 @@ export default function Shopping() {
           <Plus size={24} />
         </button>
       )}
+    </div>
+  )
+}
+
+export default function Shopping() {
+  const [tab, setTab] = useState('list')
+  return (
+    <div className="flex flex-col gap-4 animate-fade-in">
+      {/* Tab switcher */}
+      <div className="flex bg-slate-100 dark:bg-slate-800 rounded-2xl p-1 gap-1">
+        <button
+          onClick={() => setTab('list')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            tab === 'list'
+              ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+        >
+          <ShoppingCart size={15} />
+          Nákupný zoznam
+        </button>
+        <button
+          onClick={() => setTab('cards')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            tab === 'cards'
+              ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+        >
+          <CreditCard size={15} />
+          Klubové karty
+        </button>
+      </div>
+
+      {tab === 'list' ? <ShoppingList /> : <LoyaltyCards />}
     </div>
   )
 }
