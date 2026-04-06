@@ -71,6 +71,7 @@ export default function Settings() {
   const [darkMode, setDarkMode] = useLocalStorage('dark-mode', false)
   const [colorTheme, setColorTheme] = useLocalStorage('color-theme', 'indigo')
   const [notifEnabled, setNotifEnabled] = useLocalStorage('notifications-enabled', false)
+  const [reminderTime, setReminderTime] = useLocalStorage('reminder-time', '08:00')
   const [defaultTaskInterval, setDefaultTaskInterval] = useLocalStorage('default-task-interval', 30)
   const [defaultPlantInterval, setDefaultPlantInterval] = useLocalStorage('default-plant-interval', 7)
   const [showQuotes, setShowQuotes] = useLocalStorage('show-quotes', true)
@@ -272,6 +273,16 @@ export default function Settings() {
             <BellOff size={16} className="text-slate-400" />
           )}
         </Row>
+        {notifEnabled && notifPermission === 'granted' && (
+          <Row label="Denná pripomienka" sublabel="Čas každodenného upozornenia">
+            <input
+              type="time"
+              value={reminderTime}
+              onChange={e => setReminderTime(e.target.value)}
+              className="border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-lg px-2 py-1 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+          </Row>
+        )}
       </Section>
 
       {/* Defaults */}

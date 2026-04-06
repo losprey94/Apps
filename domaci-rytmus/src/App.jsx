@@ -14,6 +14,7 @@ import More from './components/More'
 import { ThemeProvider, THEMES } from './context/ThemeContext'
 import { SyncProvider, useSync } from './context/SyncContext'
 import { useLocalStorage } from './hooks/useLocalStorage'
+import { useTaskNotifications } from './hooks/useTaskNotifications'
 
 function getDaysSince(dateStr) {
   if (!dateStr) return null
@@ -88,6 +89,9 @@ function AppInner() {
   const tasks    = (isConnected && householdData?.tasks)    ? householdData.tasks    : localTasks
   const plants   = (isConnected && householdData?.plants)   ? householdData.plants   : localPlants
   const shopping = (isConnected && householdData?.shopping) ? householdData.shopping : localShopping
+
+  // Daily task notifications
+  useTaskNotifications(tasks)
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
