@@ -18,7 +18,7 @@ const SUGGESTIONS = {
   pecivo: ['Chlieb', 'Rožky', 'Toastový chlieb', 'Bageta'],
   maso: ['Kuracie prsia', 'Bravčový bôčik', 'Mleté mäso', 'Losos', 'Klobása'],
   napoje: ['Voda', 'Džús', 'Káva', 'Čaj', 'Pivo', 'Limonáda'],
-  domacnost: ['Toilet paper', 'Prací prášok', 'Jar', 'Sáčky na odpadky', 'Utierky'],
+  domacnost: ['Toaletný papier', 'Prací prášok', 'Jar', 'Sáčky na odpadky', 'Utierky'],
   ostatne: [],
 }
 
@@ -31,17 +31,9 @@ export default function Shopping() {
   const [expandedCategories, setExpandedCategories] = useLocalStorage('shopping-expanded', {})
   const [showDone, setShowDone] = useLocalStorage('shopping-show-done', true)
 
-  const toggleItem = (id) => {
-    setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
-  }
-
-  const deleteItem = (id) => {
-    setItems(items.filter(i => i.id !== id))
-  }
-
-  const clearDone = () => {
-    setItems(items.filter(i => !i.done))
-  }
+  const toggleItem = (id) => setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
+  const deleteItem = (id) => setItems(items.filter(i => i.id !== id))
+  const clearDone = () => setItems(items.filter(i => !i.done))
 
   const addItem = (name, cat = selectedCategory, qty = quantity) => {
     if (!name.trim()) return
@@ -62,9 +54,8 @@ export default function Shopping() {
     setShowForm(false)
   }
 
-  const toggleCategory = (catId) => {
+  const toggleCategory = (catId) =>
     setExpandedCategories(prev => ({ ...prev, [catId]: !prev[catId] }))
-  }
 
   const pendingItems = items.filter(i => !i.done)
   const doneItems = items.filter(i => i.done)
@@ -78,17 +69,19 @@ export default function Shopping() {
     s => !items.some(i => i.name.toLowerCase() === s.toLowerCase())
   )
 
+  const progressPct = items.length > 0 ? Math.round((doneItems.length / items.length) * 100) : 0
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 animate-fade-in">
       {/* Stats bar */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-violet-100 rounded-xl p-2">
-              <ShoppingCart size={20} className="text-violet-600" />
+            <div className="bg-violet-100 dark:bg-violet-900/50 rounded-xl p-2">
+              <ShoppingCart size={20} className="text-violet-600 dark:text-violet-400" />
             </div>
             <div>
-              <div className="font-semibold text-slate-800">
+              <div className="font-semibold text-slate-800 dark:text-slate-200">
                 {pendingItems.length} položiek
               </div>
               <div className="text-xs text-slate-400">
@@ -99,24 +92,23 @@ export default function Shopping() {
           {doneItems.length > 0 && (
             <button
               onClick={clearDone}
-              className="text-xs text-slate-400 hover:text-red-500 transition-colors border border-slate-200 hover:border-red-200 rounded-xl px-3 py-1.5"
+              className="text-xs text-slate-400 hover:text-red-500 transition-colors border border-slate-200 dark:border-slate-600 hover:border-red-200 rounded-xl px-3 py-1.5"
             >
               Vymazať hotové
             </button>
           )}
         </div>
 
-        {/* Progress */}
         {items.length > 0 && (
           <div className="mt-3">
-            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
               <div
-                className="h-full bg-violet-500 rounded-full transition-all"
-                style={{ width: `${(doneItems.length / items.length) * 100}%` }}
+                className="h-full bg-violet-500 rounded-full transition-all duration-500"
+                style={{ width: `${progressPct}%` }}
               />
             </div>
             <div className="text-right mt-1 text-xs text-slate-400">
-              {Math.round((doneItems.length / items.length) * 100)}% hotovo
+              {progressPct}% hotovo
             </div>
           </div>
         )}
@@ -126,15 +118,15 @@ export default function Shopping() {
       {groupedPending.length > 0 && (
         <div className="flex flex-col gap-2">
           {groupedPending.map(cat => (
-            <div key={cat.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div key={cat.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
               <button
                 onClick={() => toggleCategory(cat.id)}
-                className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition-colors"
+                className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
               >
                 <div className="flex items-center gap-2.5">
                   <span className="text-lg">{cat.emoji}</span>
-                  <span className="font-semibold text-slate-700 text-sm">{cat.label}</span>
-                  <span className="bg-violet-100 text-violet-600 text-xs font-bold px-1.5 py-0.5 rounded-full">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300 text-sm">{cat.label}</span>
+                  <span className="bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-400 text-xs font-bold px-1.5 py-0.5 rounded-full">
                     {cat.items.length}
                   </span>
                 </div>
@@ -145,17 +137,17 @@ export default function Shopping() {
               </button>
 
               {expandedCategories[cat.id] !== false && (
-                <div className="border-t border-slate-100">
+                <div className="border-t border-slate-100 dark:border-slate-700">
                   {cat.items.map((item, idx) => (
                     <div
                       key={item.id}
-                      className={`flex items-center gap-3 px-4 py-3 ${idx < cat.items.length - 1 ? 'border-b border-slate-50' : ''}`}
+                      className={`flex items-center gap-3 px-4 py-3 ${idx < cat.items.length - 1 ? 'border-b border-slate-50 dark:border-slate-700/50' : ''}`}
                     >
                       <button
                         onClick={() => toggleItem(item.id)}
-                        className="w-5 h-5 rounded-full border-2 border-slate-300 hover:border-violet-400 flex-shrink-0 flex items-center justify-center transition-colors"
+                        className="w-5 h-5 rounded-full border-2 border-slate-300 dark:border-slate-500 hover:border-violet-400 flex-shrink-0 flex items-center justify-center transition-colors active:scale-90"
                       />
-                      <span className="flex-1 text-sm text-slate-700">{item.name}</span>
+                      <span className="flex-1 text-sm text-slate-700 dark:text-slate-300">{item.name}</span>
                       {item.quantity > 1 && (
                         <span className="text-xs text-slate-400 font-medium">×{item.quantity}</span>
                       )}
@@ -176,30 +168,30 @@ export default function Shopping() {
 
       {/* Done items */}
       {doneItems.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
           <button
             onClick={() => setShowDone(!showDone)}
-            className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 transition-colors"
+            className="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
           >
             <div className="flex items-center gap-2.5">
               <Check size={16} className="text-emerald-500" />
-              <span className="font-semibold text-slate-500 text-sm">Hotové</span>
-              <span className="bg-emerald-100 text-emerald-600 text-xs font-bold px-1.5 py-0.5 rounded-full">
+              <span className="font-semibold text-slate-500 dark:text-slate-400 text-sm">Hotové</span>
+              <span className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 text-xs font-bold px-1.5 py-0.5 rounded-full">
                 {doneItems.length}
               </span>
             </div>
             {showDone ? <ChevronDown size={16} className="text-slate-400" /> : <ChevronRight size={16} className="text-slate-400" />}
           </button>
           {showDone && (
-            <div className="border-t border-slate-100">
+            <div className="border-t border-slate-100 dark:border-slate-700">
               {doneItems.map((item, idx) => (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-3 px-4 py-3 ${idx < doneItems.length - 1 ? 'border-b border-slate-50' : ''}`}
+                  className={`flex items-center gap-3 px-4 py-3 ${idx < doneItems.length - 1 ? 'border-b border-slate-50 dark:border-slate-700/50' : ''}`}
                 >
                   <button
                     onClick={() => toggleItem(item.id)}
-                    className="w-5 h-5 rounded-full bg-emerald-500 flex-shrink-0 flex items-center justify-center transition-colors"
+                    className="w-5 h-5 rounded-full bg-emerald-500 flex-shrink-0 flex items-center justify-center active:scale-90"
                   >
                     <Check size={11} className="text-white" strokeWidth={3} />
                   </button>
@@ -217,8 +209,17 @@ export default function Shopping() {
         </div>
       )}
 
+      {/* All done celebration */}
+      {items.length > 0 && pendingItems.length === 0 && (
+        <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-5 text-center animate-pop">
+          <div className="text-3xl mb-2">🎉</div>
+          <div className="font-semibold text-emerald-800 dark:text-emerald-300">Nákup hotový!</div>
+          <div className="text-sm text-emerald-600 dark:text-emerald-400 mt-0.5">Všetky položky nakúpené.</div>
+        </div>
+      )}
+
       {items.length === 0 && (
-        <div className="text-center py-12 text-slate-400">
+        <div className="text-center py-12 text-slate-400 dark:text-slate-500">
           <ShoppingCart size={40} className="mx-auto mb-3 opacity-30" />
           <div className="font-medium">Zoznam je prázdny</div>
           <div className="text-sm mt-1">Pridaj prvú položku</div>
@@ -227,17 +228,16 @@ export default function Shopping() {
 
       {/* Add item form */}
       {showForm && (
-        <div className="bg-white rounded-2xl border border-violet-200 shadow-sm p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-violet-200 dark:border-violet-800 shadow-sm p-4 animate-slide-up">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-slate-800">Pridať položku</h3>
+            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Pridať položku</h3>
             <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
               <X size={18} />
             </button>
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            {/* Category */}
             <div>
-              <label className="text-xs font-medium text-slate-500 mb-1.5 block">Kategória</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 block">Kategória</label>
               <div className="flex flex-wrap gap-1.5">
                 {CATEGORIES.map(cat => (
                   <button
@@ -246,8 +246,8 @@ export default function Shopping() {
                     onClick={() => setSelectedCategory(cat.id)}
                     className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-xl border font-medium transition-all ${
                       selectedCategory === cat.id
-                        ? 'bg-violet-100 text-violet-700 border-violet-300'
-                        : 'bg-slate-50 text-slate-600 border-slate-200'
+                        ? 'bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-700'
+                        : 'bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-600'
                     }`}
                   >
                     <span>{cat.emoji}</span>
@@ -263,7 +263,7 @@ export default function Shopping() {
                 placeholder="Názov položky..."
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                className="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
+                className="flex-1 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
                 autoFocus
               />
               <input
@@ -273,11 +273,10 @@ export default function Shopping() {
                 value={quantity}
                 onChange={e => setQuantity(e.target.value)}
                 placeholder="Ks"
-                className="w-16 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
+                className="w-16 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
               />
             </div>
 
-            {/* Suggestions */}
             {suggestions.length > 0 && (
               <div>
                 <div className="text-xs text-slate-400 mb-1.5">Návrhy:</div>
@@ -286,8 +285,8 @@ export default function Shopping() {
                     <button
                       key={s}
                       type="button"
-                      onClick={() => { addItem(s); }}
-                      className="text-xs bg-slate-100 hover:bg-violet-100 text-slate-600 hover:text-violet-700 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-violet-300 transition-colors"
+                      onClick={() => addItem(s)}
+                      className="text-xs bg-slate-100 dark:bg-slate-700 hover:bg-violet-100 dark:hover:bg-violet-900/50 text-slate-600 dark:text-slate-400 hover:text-violet-700 dark:hover:text-violet-300 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-600 hover:border-violet-300 transition-colors"
                     >
                       + {s}
                     </button>
@@ -298,7 +297,7 @@ export default function Shopping() {
 
             <button
               type="submit"
-              className="w-full bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors"
+              className="w-full bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors active:scale-95"
             >
               Pridať do zoznamu
             </button>
@@ -309,7 +308,7 @@ export default function Shopping() {
       {!showForm && (
         <button
           onClick={() => setShowForm(true)}
-          className="fixed bottom-24 right-5 w-14 h-14 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-full shadow-lg flex items-center justify-center transition-all z-10"
+          className="fixed bottom-24 right-5 w-14 h-14 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-full shadow-lg shadow-violet-200 dark:shadow-violet-900 flex items-center justify-center transition-all z-10"
         >
           <Plus size={24} />
         </button>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Droplets, Plus, Trash2, Leaf, AlertCircle, X } from 'lucide-react'
+import { Droplets, Plus, Trash2, Leaf, X } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
 const DEFAULT_PLANTS = [
@@ -12,8 +12,7 @@ const PLANT_EMOJIS = ['🌿', '🌵', '🌸', '🌺', '🍀', '🌱', '🪴', '�
 
 function getDaysSince(dateStr) {
   if (!dateStr) return null
-  const diff = Date.now() - new Date(dateStr).getTime()
-  return Math.floor(diff / (1000 * 60 * 60 * 24))
+  return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000)
 }
 
 function getWaterStatus(plant) {
@@ -26,9 +25,9 @@ function getWaterStatus(plant) {
 }
 
 const STATUS = {
-  thirsty: { label: 'Smädná', bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', barColor: 'bg-red-400' },
-  soon: { label: 'Čoskoro', bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', barColor: 'bg-amber-400' },
-  ok: { label: 'Napojená', bg: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-cyan-200', barColor: 'bg-cyan-400' },
+  thirsty: { label: 'Smädná', bg: 'bg-red-50 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', border: 'border-red-200 dark:border-red-800', barColor: 'bg-red-400' },
+  soon:    { label: 'Čoskoro', bg: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800', barColor: 'bg-amber-400' },
+  ok:      { label: 'Napojená', bg: 'bg-cyan-50 dark:bg-cyan-900/30', text: 'text-cyan-700 dark:text-cyan-400', border: 'border-cyan-200 dark:border-cyan-800', barColor: 'bg-cyan-400' },
 }
 
 export default function Plants() {
@@ -38,14 +37,15 @@ export default function Plants() {
   const [emoji, setEmoji] = useState('🪴')
   const [interval, setInterval] = useState('7')
   const [location, setLocation] = useState('')
+  const [justWatered, setJustWatered] = useState(null)
 
   const water = (id) => {
     setPlants(plants.map(p => p.id === id ? { ...p, lastWatered: new Date().toISOString() } : p))
+    setJustWatered(id)
+    setTimeout(() => setJustWatered(null), 1200)
   }
 
-  const deletePlant = (id) => {
-    setPlants(plants.filter(p => p.id !== id))
-  }
+  const deletePlant = (id) => setPlants(plants.filter(p => p.id !== id))
 
   const addPlant = (e) => {
     e.preventDefault()
@@ -73,10 +73,10 @@ export default function Plants() {
   })
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 animate-fade-in">
       {/* Banner */}
       {thirstyCount > 0 && (
-        <div className="bg-cyan-600 rounded-2xl p-4 flex items-center gap-3">
+        <div className="bg-cyan-600 dark:bg-cyan-700 rounded-2xl p-4 flex items-center gap-3">
           <div className="bg-white/20 rounded-xl p-2">
             <Droplets size={22} className="text-white" />
           </div>
@@ -91,39 +91,40 @@ export default function Plants() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-          <div className="text-2xl font-bold text-slate-800">{plants.length}</div>
-          <div className="text-xs text-slate-500 mt-0.5">Rastlín</div>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-3 text-center border border-slate-100 dark:border-slate-700 shadow-sm">
+          <div className="text-2xl font-bold text-slate-800 dark:text-slate-200">{plants.length}</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Rastlín</div>
         </div>
-        <div className="bg-white rounded-2xl p-3 text-center border border-red-100 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-3 text-center border border-red-100 dark:border-red-900/50 shadow-sm">
           <div className="text-2xl font-bold text-red-500">{thirstyCount}</div>
-          <div className="text-xs text-slate-500 mt-0.5">Smädné</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Smädné</div>
         </div>
-        <div className="bg-white rounded-2xl p-3 text-center border border-cyan-100 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-3 text-center border border-cyan-100 dark:border-cyan-900/50 shadow-sm">
           <div className="text-2xl font-bold text-cyan-600">
             {plants.filter(p => getWaterStatus(p) === 'ok').length}
           </div>
-          <div className="text-xs text-slate-500 mt-0.5">Napojené</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Napojené</div>
         </div>
       </div>
 
       {/* Plant list */}
-      <div className="grid grid-cols-1 gap-3">
+      <div className="flex flex-col gap-3">
         {sorted.map(plant => {
           const status = getWaterStatus(plant)
           const cfg = STATUS[status]
           const days = getDaysSince(plant.lastWatered)
           const daysUntil = days !== null ? plant.intervalDays - days : null
+          const isWatered = justWatered === plant.id
 
           return (
-            <div key={plant.id} className={`bg-white rounded-2xl border ${cfg.border} shadow-sm overflow-hidden`}>
+            <div key={plant.id} className={`bg-white dark:bg-slate-800 rounded-2xl border ${cfg.border} shadow-sm overflow-hidden ${isWatered ? 'animate-pop' : 'animate-fade-in'}`}>
               <div className="p-4">
                 <div className="flex items-start gap-3">
                   <div className="text-3xl leading-none mt-0.5">{plant.emoji}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
                       <div>
-                        <div className="font-semibold text-slate-800">{plant.name}</div>
+                        <div className="font-semibold text-slate-800 dark:text-slate-200">{plant.name}</div>
                         {plant.location && (
                           <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
                             <Leaf size={10} />
@@ -141,20 +142,20 @@ export default function Plants() {
                       </div>
                     </div>
 
-                    <div className="mt-2 text-xs text-slate-500">
+                    <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                       {days === null
                         ? 'Ešte nezaliata'
                         : daysUntil !== null && daysUntil > 0
-                          ? `Ďalšie polievanie o ${daysUntil} ${daysUntil === 1 ? 'deň' : daysUntil < 5 ? 'dni' : 'dní'}`
+                          ? `Ďalšie polievanie o ${daysUntil} ${daysUntil === 1 ? 'deň' : 'dní'}`
                           : `Oneskorené o ${Math.abs(daysUntil || 0)} dní`
                       }
                     </div>
 
                     {days !== null && (
                       <div className="mt-2">
-                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all ${cfg.barColor}`}
+                            className={`h-full rounded-full transition-all duration-500 ${cfg.barColor}`}
                             style={{ width: `${Math.min((days / plant.intervalDays) * 100, 100)}%` }}
                           />
                         </div>
@@ -165,41 +166,50 @@ export default function Plants() {
 
                 <button
                   onClick={() => water(plant.id)}
-                  className={`mt-3 w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors ${
-                    status === 'thirsty'
-                      ? 'bg-cyan-500 hover:bg-cyan-600 active:bg-cyan-700'
-                      : 'bg-slate-200 hover:bg-slate-300 !text-slate-600'
+                  className={`mt-3 w-full flex items-center justify-center gap-2 text-sm font-semibold py-2.5 rounded-xl transition-all active:scale-95 ${
+                    isWatered
+                      ? 'bg-emerald-500 text-white'
+                      : status === 'thirsty'
+                        ? 'bg-cyan-500 hover:bg-cyan-600 text-white'
+                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300'
                   }`}
                 >
                   <Droplets size={16} />
-                  {status === 'thirsty' ? 'Zaliať teraz' : 'Zaliať'}
+                  {isWatered ? 'Zaliata ✓' : status === 'thirsty' ? 'Zaliať teraz' : 'Zaliať'}
                 </button>
               </div>
             </div>
           )
         })}
+
+        {plants.length === 0 && (
+          <div className="text-center py-12 text-slate-400 dark:text-slate-500">
+            <span className="text-5xl block mb-3">🪴</span>
+            <div className="font-medium">Žiadne rastliny</div>
+            <div className="text-sm mt-1">Pridaj prvú rastlinu tlačidlom +</div>
+          </div>
+        )}
       </div>
 
       {/* Add plant form */}
       {showForm && (
-        <div className="bg-white rounded-2xl border border-cyan-200 shadow-sm p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-cyan-200 dark:border-cyan-800 shadow-sm p-4 animate-slide-up">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-slate-800">Nová rastlina</h3>
+            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Nová rastlina</h3>
             <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
               <X size={18} />
             </button>
           </div>
           <form onSubmit={addPlant} className="flex flex-col gap-3">
-            {/* Emoji picker */}
             <div>
-              <label className="text-xs font-medium text-slate-500 mb-1.5 block">Ikona</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 block">Ikona</label>
               <div className="flex flex-wrap gap-2">
                 {PLANT_EMOJIS.map(e => (
                   <button
                     key={e}
                     type="button"
                     onClick={() => setEmoji(e)}
-                    className={`text-xl p-1.5 rounded-lg transition-all ${emoji === e ? 'bg-cyan-100 ring-2 ring-cyan-400 scale-110' : 'bg-slate-50 hover:bg-slate-100'}`}
+                    className={`text-xl p-1.5 rounded-lg transition-all ${emoji === e ? 'bg-cyan-100 dark:bg-cyan-900/50 ring-2 ring-cyan-400 scale-110' : 'bg-slate-50 dark:bg-slate-700 hover:bg-slate-100'}`}
                   >
                     {e}
                   </button>
@@ -211,7 +221,7 @@ export default function Plants() {
               placeholder="Názov rastliny..."
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+              className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
               autoFocus
             />
             <input
@@ -219,21 +229,21 @@ export default function Plants() {
               placeholder="Umiestnenie (voliteľné)..."
               value={location}
               onChange={e => setLocation(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+              className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
             />
             <div className="flex items-center gap-3">
-              <label className="text-sm text-slate-600 whitespace-nowrap">Polievať každých</label>
+              <label className="text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">Polievať každých</label>
               <input
                 type="number"
                 min="1"
                 max="90"
                 value={interval}
                 onChange={e => setInterval(e.target.value)}
-                className="w-16 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                className="w-16 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
               />
-              <label className="text-sm text-slate-600">dní</label>
+              <label className="text-sm text-slate-600 dark:text-slate-400">dní</label>
             </div>
-            <button type="submit" className="w-full bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
+            <button type="submit" className="w-full bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors active:scale-95">
               Pridať rastlinu
             </button>
           </form>
@@ -243,7 +253,7 @@ export default function Plants() {
       {!showForm && (
         <button
           onClick={() => setShowForm(true)}
-          className="fixed bottom-24 right-5 w-14 h-14 bg-cyan-500 hover:bg-cyan-600 active:scale-95 text-white rounded-full shadow-lg flex items-center justify-center transition-all z-10"
+          className="fixed bottom-24 right-5 w-14 h-14 bg-cyan-500 hover:bg-cyan-600 active:scale-95 text-white rounded-full shadow-lg shadow-cyan-200 dark:shadow-cyan-900 flex items-center justify-center transition-all z-10"
         >
           <Plus size={24} />
         </button>

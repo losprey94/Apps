@@ -10,8 +10,7 @@ const DEFAULT_TASKS = [
 
 function getDaysSince(dateStr) {
   if (!dateStr) return null
-  const diff = Date.now() - new Date(dateStr).getTime()
-  return Math.floor(diff / (1000 * 60 * 60 * 24))
+  return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000)
 }
 
 function getStatus(task) {
@@ -26,30 +25,30 @@ function getStatus(task) {
 const STATUS_CONFIG = {
   pending: {
     label: 'Čaká',
-    bg: 'bg-slate-100',
-    text: 'text-slate-600',
-    border: 'border-slate-200',
+    bg: 'bg-slate-100 dark:bg-slate-700',
+    text: 'text-slate-600 dark:text-slate-300',
+    border: 'border-slate-200 dark:border-slate-700',
     dot: 'bg-slate-400',
   },
   ok: {
     label: 'V poriadku',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    border: 'border-emerald-200',
+    bg: 'bg-emerald-50 dark:bg-emerald-900/30',
+    text: 'text-emerald-700 dark:text-emerald-400',
+    border: 'border-emerald-200 dark:border-emerald-800',
     dot: 'bg-emerald-500',
   },
   soon: {
     label: 'Čoskoro',
-    bg: 'bg-amber-50',
-    text: 'text-amber-700',
-    border: 'border-amber-200',
+    bg: 'bg-amber-50 dark:bg-amber-900/30',
+    text: 'text-amber-700 dark:text-amber-400',
+    border: 'border-amber-200 dark:border-amber-800',
     dot: 'bg-amber-500',
   },
   overdue: {
     label: 'Oneskorené',
-    bg: 'bg-red-50',
-    text: 'text-red-700',
-    border: 'border-red-200',
+    bg: 'bg-red-50 dark:bg-red-900/30',
+    text: 'text-red-700 dark:text-red-400',
+    border: 'border-red-200 dark:border-red-800',
     dot: 'bg-red-500',
   },
 }
@@ -59,25 +58,25 @@ export default function Tasks() {
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [interval, setInterval] = useState('30')
+  const [justDone, setJustDone] = useState(null)
 
   const markDone = (id) => {
     setTasks(tasks.map(t => t.id === id ? { ...t, lastDone: new Date().toISOString() } : t))
+    setJustDone(id)
+    setTimeout(() => setJustDone(null), 1200)
   }
 
-  const deleteTask = (id) => {
-    setTasks(tasks.filter(t => t.id !== id))
-  }
+  const deleteTask = (id) => setTasks(tasks.filter(t => t.id !== id))
 
   const addTask = (e) => {
     e.preventDefault()
     if (!name.trim()) return
-    const newTask = {
+    setTasks([...tasks, {
       id: Date.now(),
       name: name.trim(),
       intervalDays: parseInt(interval) || 30,
       lastDone: null,
-    }
-    setTasks([...tasks, newTask])
+    }])
     setName('')
     setInterval('30')
     setShowForm(false)
@@ -92,22 +91,22 @@ export default function Tasks() {
   const pendingCount = tasks.filter(t => getStatus(t) === 'pending').length
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 animate-fade-in">
       {/* Header stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-          <div className="text-2xl font-bold text-slate-800">{tasks.length}</div>
-          <div className="text-xs text-slate-500 mt-0.5">Celkom úloh</div>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-3 text-center border border-slate-100 dark:border-slate-700 shadow-sm">
+          <div className="text-2xl font-bold text-slate-800 dark:text-slate-200">{tasks.length}</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Celkom úloh</div>
         </div>
-        <div className="bg-white rounded-2xl p-3 text-center border border-red-100 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-3 text-center border border-red-100 dark:border-red-900/50 shadow-sm">
           <div className="text-2xl font-bold text-red-600">{overdueCount + pendingCount}</div>
-          <div className="text-xs text-slate-500 mt-0.5">Na splnenie</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Na splnenie</div>
         </div>
-        <div className="bg-white rounded-2xl p-3 text-center border border-emerald-100 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-3 text-center border border-emerald-100 dark:border-emerald-900/50 shadow-sm">
           <div className="text-2xl font-bold text-emerald-600">
             {tasks.filter(t => getStatus(t) === 'ok').length}
           </div>
-          <div className="text-xs text-slate-500 mt-0.5">Hotové</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Hotové</div>
         </div>
       </div>
 
@@ -117,18 +116,19 @@ export default function Tasks() {
           const status = getStatus(task)
           const cfg = STATUS_CONFIG[status]
           const days = getDaysSince(task.lastDone)
+          const isDone = justDone === task.id
 
           return (
             <div
               key={task.id}
-              className={`bg-white rounded-2xl border ${cfg.border} shadow-sm overflow-hidden`}
+              className={`bg-white dark:bg-slate-800 rounded-2xl border ${cfg.border} shadow-sm overflow-hidden transition-all ${isDone ? 'animate-pop' : 'animate-fade-in'}`}
             >
               <div className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
                     <div className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${cfg.dot}`} />
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-slate-800 text-sm leading-tight">{task.name}</div>
+                      <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm leading-tight">{task.name}</div>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${cfg.bg} ${cfg.text}`}>
                           {status === 'overdue' && <AlertCircle size={10} />}
@@ -138,15 +138,14 @@ export default function Tasks() {
                         </span>
                         {days !== null ? (
                           <span className="text-xs text-slate-400">
-                            pred {days} {days === 1 ? 'dňom' : days < 5 ? 'dňami' : 'dňami'}
+                            pred {days} {days === 1 ? 'dňom' : 'dňami'}
                           </span>
                         ) : (
                           <span className="text-xs text-slate-400">Ešte nesplnené</span>
                         )}
                       </div>
                       <div className="mt-1.5 text-xs text-slate-400">
-                        Opakovať každých {task.intervalDays}{' '}
-                        {task.intervalDays === 1 ? 'deň' : task.intervalDays < 5 ? 'dni' : 'dní'}
+                        Každých {task.intervalDays} {task.intervalDays === 1 ? 'deň' : task.intervalDays < 5 ? 'dni' : 'dní'}
                       </div>
                     </div>
                   </div>
@@ -158,12 +157,11 @@ export default function Tasks() {
                   </button>
                 </div>
 
-                {/* Progress bar */}
                 {days !== null && (
                   <div className="mt-3">
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all ${
+                        className={`h-full rounded-full transition-all duration-500 ${
                           status === 'overdue' ? 'bg-red-400' :
                           status === 'soon' ? 'bg-amber-400' : 'bg-emerald-400'
                         }`}
@@ -179,23 +177,33 @@ export default function Tasks() {
 
                 <button
                   onClick={() => markDone(task.id)}
-                  className="mt-3 w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors"
+                  className={`mt-3 w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-2.5 rounded-xl transition-all active:scale-95 ${
+                    isDone ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'
+                  }`}
                 >
                   <CheckCircle2 size={16} />
-                  Hotovo
+                  {isDone ? 'Hotovo ✓' : 'Hotovo'}
                 </button>
               </div>
             </div>
           )
         })}
+
+        {tasks.length === 0 && (
+          <div className="text-center py-12 text-slate-400 dark:text-slate-500">
+            <CheckCircle2 size={40} className="mx-auto mb-3 opacity-30" />
+            <div className="font-medium">Žiadne úlohy</div>
+            <div className="text-sm mt-1">Pridaj prvú úlohu tlačidlom +</div>
+          </div>
+        )}
       </div>
 
       {/* Add task form */}
       {showForm && (
-        <div className="bg-white rounded-2xl border border-indigo-200 shadow-sm p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-indigo-200 dark:border-indigo-800 shadow-sm p-4 animate-slide-up">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-slate-800">Nová úloha</h3>
-            <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Nová úloha</h3>
+            <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
               <X size={18} />
             </button>
           </div>
@@ -205,24 +213,24 @@ export default function Tasks() {
               placeholder="Názov úlohy..."
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
               autoFocus
             />
             <div className="flex items-center gap-3">
-              <label className="text-sm text-slate-600 whitespace-nowrap">Každých</label>
+              <label className="text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">Každých</label>
               <input
                 type="number"
                 min="1"
                 max="365"
                 value={interval}
                 onChange={e => setInterval(e.target.value)}
-                className="w-20 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                className="w-20 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
               />
-              <label className="text-sm text-slate-600">dní</label>
+              <label className="text-sm text-slate-600 dark:text-slate-400">dní</label>
             </div>
             <button
               type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors active:scale-95"
             >
               Pridať úlohu
             </button>
@@ -230,11 +238,10 @@ export default function Tasks() {
         </div>
       )}
 
-      {/* FAB */}
       {!showForm && (
         <button
           onClick={() => setShowForm(true)}
-          className="fixed bottom-24 right-5 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-full shadow-lg flex items-center justify-center transition-all z-10"
+          className="fixed bottom-24 right-5 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-full shadow-lg shadow-indigo-200 dark:shadow-indigo-900 flex items-center justify-center transition-all z-10"
         >
           <Plus size={24} />
         </button>
