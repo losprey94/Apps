@@ -89,6 +89,21 @@ export default function Settings() {
     document.documentElement.classList.toggle('dark', darkMode)
   }, [darkMode])
 
+  useEffect(() => {
+    const colors = {
+      indigo:  { primary: '#4f46e5', bg: '#eef2ff', ring: '#6366f1' },
+      violet:  { primary: '#7c3aed', bg: '#f5f3ff', ring: '#8b5cf6' },
+      rose:    { primary: '#e11d48', bg: '#fff1f2', ring: '#f43f5e' },
+      emerald: { primary: '#059669', bg: '#ecfdf5', ring: '#10b981' },
+      amber:   { primary: '#d97706', bg: '#fffbeb', ring: '#f59e0b' },
+      cyan:    { primary: '#0891b2', bg: '#ecfeff', ring: '#06b6d4' },
+    }
+    const t = colors[colorTheme] || colors.indigo
+    document.documentElement.style.setProperty('--color-primary', t.primary)
+    document.documentElement.style.setProperty('--color-primary-bg', t.bg)
+    document.documentElement.style.setProperty('--color-primary-ring', t.ring)
+  }, [colorTheme])
+
   const notifSupported = 'Notification' in window
   const notifPermission = notifSupported ? Notification.permission : 'denied'
 

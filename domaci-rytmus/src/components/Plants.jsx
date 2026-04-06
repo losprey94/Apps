@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Droplets, Plus, Trash2, Leaf, X } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useHistory } from '../hooks/useHistory'
 
 const DEFAULT_PLANTS = [
   { id: 1, name: 'Monstera', emoji: '🌿', intervalDays: 7, lastWatered: null, location: 'Obývačka' },
@@ -38,9 +39,12 @@ export default function Plants() {
   const [interval, setInterval] = useState('7')
   const [location, setLocation] = useState('')
   const [justWatered, setJustWatered] = useState(null)
+  const { addEvent } = useHistory()
 
   const water = (id) => {
+    const plant = plants.find(p => p.id === id)
     setPlants(plants.map(p => p.id === id ? { ...p, lastWatered: new Date().toISOString() } : p))
+    if (plant) addEvent('plants', plant.emoji, 'Zaliata', plant.name)
     setJustWatered(id)
     setTimeout(() => setJustWatered(null), 1200)
   }

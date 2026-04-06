@@ -9,6 +9,12 @@
   box-sizing: border-box;
 }
 
+:root {
+  --color-primary: #4f46e5;
+  --color-primary-bg: #eef2ff;
+  --color-primary-ring: #6366f1;
+}
+
 html {
   background-color: #f8fafc;
 }
