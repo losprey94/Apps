@@ -1,6 +1,8 @@
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useSyncedStorage } from '../context/SyncContext'
 
 const SECTIONS = [
+  { id: 'budget',    label: 'Rozpočet',  emoji: '💶', desc: 'Výdavky a úspory',              color: 'emerald' },
   { id: 'pets',      label: 'Zvieratá',  emoji: '🐾', desc: 'Starostlivosť o miláčikov',    color: 'amber'  },
   { id: 'energy',    label: 'Energie',   emoji: '⚡', desc: 'Odpočty meračov',               color: 'orange' },
   { id: 'contacts',  label: 'Kontakty',  emoji: '📞', desc: 'Dôležité telefóny',             color: 'indigo' },
@@ -10,11 +12,23 @@ const SECTIONS = [
 ]
 
 const COLORS = {
-  amber:  { bg: 'bg-amber-50 dark:bg-amber-900/30',   border: 'border-amber-200 dark:border-amber-800',   text: 'text-amber-600 dark:text-amber-400' },
-  orange: { bg: 'bg-orange-50 dark:bg-orange-900/30', border: 'border-orange-200 dark:border-orange-800', text: 'text-orange-600 dark:text-orange-400' },
-  indigo: { bg: 'bg-indigo-50 dark:bg-indigo-900/30', border: 'border-indigo-200 dark:border-indigo-800', text: 'text-indigo-600 dark:text-indigo-400' },
-  slate:  { bg: 'bg-slate-50 dark:bg-slate-700/50',   border: 'border-slate-200 dark:border-slate-600',   text: 'text-slate-600 dark:text-slate-400' },
-  rose:   { bg: 'bg-rose-50 dark:bg-rose-900/30',     border: 'border-rose-200 dark:border-rose-800',     text: 'text-rose-600 dark:text-rose-400' },
+  emerald: { bg: 'bg-emerald-50 dark:bg-emerald-900/30', border: 'border-emerald-200 dark:border-emerald-800', text: 'text-emerald-600 dark:text-emerald-400' },
+  amber:   { bg: 'bg-amber-50 dark:bg-amber-900/30',   border: 'border-amber-200 dark:border-amber-800',   text: 'text-amber-600 dark:text-amber-400' },
+  orange:  { bg: 'bg-orange-50 dark:bg-orange-900/30', border: 'border-orange-200 dark:border-orange-800', text: 'text-orange-600 dark:text-orange-400' },
+  indigo:  { bg: 'bg-indigo-50 dark:bg-indigo-900/30', border: 'border-indigo-200 dark:border-indigo-800', text: 'text-indigo-600 dark:text-indigo-400' },
+  slate:   { bg: 'bg-slate-50 dark:bg-slate-700/50',   border: 'border-slate-200 dark:border-slate-600',   text: 'text-slate-600 dark:text-slate-400' },
+  rose:    { bg: 'bg-rose-50 dark:bg-rose-900/30',     border: 'border-rose-200 dark:border-rose-800',     text: 'text-rose-600 dark:text-rose-400' },
+}
+
+function filterByPeriod(expenses, period) {
+  const now = new Date()
+  return expenses.filter(e => {
+    const d = new Date(e.date)
+    if (period === 'monthly') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+    const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay() + 6) % 7)); mon.setHours(0,0,0,0)
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6); sun.setHours(23,59,59,999)
+    return d >= mon && d <= sun
+  })
 }
 
 export default function More({ onNavigate }) {
@@ -23,10 +37,16 @@ export default function More({ onNavigate }) {
   const [history] = useLocalStorage('activity-history', [])
   const [members] = useLocalStorage('family-members', [])
   const [energyReadings] = useLocalStorage('energy-readings', {})
+  const [budgetConfig] = useSyncedStorage('budget-config', { period: 'monthly', totalBudget: 1000, categories: [] })
+  const [budgetExpenses] = useSyncedStorage('budget-expenses', [])
 
   const readingsCount = Object.values(energyReadings).flat().length
+  const periodExp     = filterByPeriod(budgetExpenses, budgetConfig.period)
+  const budgetSpent   = periodExp.reduce((s, e) => s + e.amount, 0)
+  const budgetPct     = Math.round((budgetSpent / budgetConfig.totalBudget) * 100)
 
   const badges = {
+    budget:   budgetExpenses.length,
     pets:     pets.length,
     energy:   readingsCount,
     contacts: contacts.length,
@@ -36,6 +56,7 @@ export default function More({ onNavigate }) {
   }
 
   const hints = {
+    budget:   budgetExpenses.length > 0 ? `${budgetPct}% z rozpočtu minuto` : 'Nastav mesačný rozpočet',
     pets:     pets.length > 0 ? `${pets.length} miláčikov` : 'Pridaj miláčika',
     energy:   readingsCount > 0 ? `${readingsCount} záznamov` : 'Žiadne záznamy',
     contacts: contacts.length > 0 ? `${contacts.length} kontaktov` : 'Záchranné čísla',

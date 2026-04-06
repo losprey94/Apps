@@ -10,6 +10,7 @@ import Energy from './components/Energy'
 import Contacts from './components/Contacts'
 import History from './components/History'
 import Family from './components/Family'
+import Budget from './components/Budget'
 import More from './components/More'
 import { ThemeProvider, THEMES } from './context/ThemeContext'
 import { SyncProvider, useSync } from './context/SyncContext'
@@ -35,6 +36,7 @@ const SUB_PAGES = {
   contacts:  { label: 'Kontakty',   component: Contacts  },
   history:   { label: 'História',   component: History   },
   family:    { label: 'Rodina',     component: Family    },
+  budget:    { label: 'Rozpočet',   component: Budget    },
   settings:  { label: 'Nastavenia', component: Settings  },
 }
 

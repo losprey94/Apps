@@ -1,8 +1,19 @@
 import { useState } from 'react'
-import { CheckCircle2, Droplets, ShoppingCart, AlertCircle, ChevronRight, Leaf, Zap, CreditCard } from 'lucide-react'
+import { CheckCircle2, Droplets, ShoppingCart, AlertCircle, ChevronRight, Leaf, Zap, CreditCard, Wallet } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useSyncedStorage } from '../context/SyncContext'
 import { CardViewer } from './LoyaltyCards'
+
+function filterCurrentPeriod(expenses, period) {
+  const now = new Date()
+  return expenses.filter(e => {
+    const d = new Date(e.date)
+    if (period === 'monthly') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+    const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay() + 6) % 7)); mon.setHours(0,0,0,0)
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6); sun.setHours(23,59,59,999)
+    return d >= mon && d <= sun
+  })
+}
 
 const QUOTES = [
   'Malé kroky každý deň vedú k veľkým zmenám.',
@@ -55,6 +66,8 @@ export default function Dashboard({ onNavigate, onWaterPlant, onCompleteTask }) 
   const [showQuotes] = useLocalStorage('show-quotes', true)
   const [loyaltyCards] = useSyncedStorage('loyalty-cards', [])
   const [viewCard, setViewCard] = useState(null)
+  const [budgetConfig] = useSyncedStorage('budget-config', { period: 'monthly', totalBudget: 1000 })
+  const [budgetExpenses] = useSyncedStorage('budget-expenses', [])
 
   const urgentTasks = tasks.filter(t => ['overdue', 'pending'].includes(getTaskStatus(t)))
   const thirstyPlants = plants.filter(p => getPlantStatus(p) === 'thirsty')
@@ -73,6 +86,14 @@ export default function Dashboard({ onNavigate, onWaterPlant, onCompleteTask }) 
   }
 
   const pinnedCards = loyaltyCards.filter(c => c.pinned)
+
+  const periodExp   = filterCurrentPeriod(budgetExpenses, budgetConfig.period)
+  const budgetSpent = periodExp.reduce((s, e) => s + e.amount, 0)
+  const budgetTotal = budgetConfig.totalBudget || 1000
+  const budgetPct   = Math.min(budgetSpent / budgetTotal, 1)
+  const budgetOk    = budgetExpenses.length > 0
+  const budgetColor = budgetPct >= 1 ? '#ef4444' : budgetPct >= 0.8 ? '#fb923c' : budgetPct >= 0.5 ? '#fbbf24' : '#10b981'
+  const budgetRemaining = budgetTotal - budgetSpent
 
   return (
     <div className="flex flex-col gap-4 animate-fade-in">
@@ -232,6 +253,49 @@ export default function Dashboard({ onNavigate, onWaterPlant, onCompleteTask }) 
             )}
           </div>
         </div>
+      )}
+
+      {/* Budget widget */}
+      {budgetOk && (
+        <button
+          onClick={() => onNavigate('budget')}
+          className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 text-left active:scale-95 transition-transform w-full"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Wallet size={15} style={{ color: budgetColor }} />
+              <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
+                {budgetConfig.period === 'monthly' ? 'Mesačný rozpočet' : 'Týždenný rozpočet'}
+              </span>
+            </div>
+            <ChevronRight size={14} className="text-slate-400" />
+          </div>
+          <div className="flex items-end justify-between mb-2">
+            <div>
+              <span className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+                {new Intl.NumberFormat('sk-SK', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Math.max(budgetRemaining, 0))}
+              </span>
+              <div className="text-xs text-slate-400 mt-0.5">zostatok</div>
+            </div>
+            <div className="text-right">
+              <span className="text-sm font-semibold" style={{ color: budgetColor }}>
+                {Math.round(budgetPct * 100)}%
+              </span>
+              <div className="text-xs text-slate-400">minuto</div>
+            </div>
+          </div>
+          <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${budgetPct * 100}%`, backgroundColor: budgetColor }}
+            />
+          </div>
+          {budgetRemaining < 0 && (
+            <div className="mt-2 text-xs font-semibold text-red-500">
+              Prekročený o {new Intl.NumberFormat('sk-SK', { style: 'currency', currency: 'EUR' }).format(Math.abs(budgetRemaining))}
+            </div>
+          )}
+        </button>
       )}
 
       {/* Quick nav */}
