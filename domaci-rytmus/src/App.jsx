@@ -241,7 +241,7 @@ function SyncIndicator() {
   if (syncStatus === 'synced') return (
     <div className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl px-2 py-1" title="Synchronizované">
       <Cloud size={13} />
-      <span className="text-[10px] font-semibold hidden sm:inline">Sync</span>
+      <span className="text-[10px] font-semibold hidden sm:inline">Synch.</span>
     </div>
   )
   if (syncStatus === 'connecting') return (
