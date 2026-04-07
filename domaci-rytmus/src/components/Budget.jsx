@@ -451,6 +451,23 @@ export default function Budget() {
           </div>
         </div>
 
+        {/* ── Set limits button ────────────────────────────────────────────── */}
+        <button
+          onClick={() => setShowSetup(true)}
+          className="w-full flex items-center justify-between bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm px-4 py-3.5 active:scale-95 transition-transform"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 flex items-center justify-center">
+              <Settings2 size={18} className="text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">Nastaviť limity kategórií</div>
+              <div className="text-xs text-slate-400 mt-0.5">Rozpočet, obdobie, kategórie</div>
+            </div>
+          </div>
+          <ChevronRight size={16} className="text-slate-400" />
+        </button>
+
         {/* ── Categories ──────────────────────────────────────────────────── */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
