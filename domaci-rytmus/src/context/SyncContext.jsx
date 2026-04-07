@@ -111,15 +111,19 @@ export function useSyncedStorage(key, defaultValue) {
   const { isConnected, householdData, updateHousehold } = useSync()
   const [localValue, setLocalValue] = useLocalStorage(key, defaultValue)
 
-  const value = (isConnected && householdData && householdData[key] !== undefined)
-    ? householdData[key]
-    : localValue
+  // When connected, pull Firestore data into localValue so it stays in sync
+  useEffect(() => {
+    if (isConnected && householdData && householdData[key] !== undefined) {
+      setLocalValue(householdData[key])
+    }
+  }, [isConnected, householdData, key, setLocalValue])
 
   const setValue = useCallback((newValueOrFn) => {
-    const resolved = typeof newValueOrFn === 'function' ? newValueOrFn(value) : newValueOrFn
-    setLocalValue(resolved)
-    if (isConnected) updateHousehold(key, resolved)
-  }, [value, isConnected, key, setLocalValue, updateHousehold])
+    // Use localValue (always current) for functional updates
+    const resolved = typeof newValueOrFn === 'function' ? newValueOrFn(localValue) : newValueOrFn
+    setLocalValue(resolved)             // ← immediate optimistic UI update
+    if (isConnected) updateHousehold(key, resolved)  // ← async Firestore write
+  }, [localValue, isConnected, key, setLocalValue, updateHousehold])
 
-  return [value, setValue]
+  return [localValue, setValue]  // always return localValue — immediate responsiveness
 }

@@ -1,3 +1,20 @@
+// Capture PWA install prompt as early as possible — before React mounts
+// (the event fires almost instantly after page load, often before any component mounts)
+let _deferredInstallPrompt = null
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  _deferredInstallPrompt = e
+  // Notify any already-mounted listeners
+  window.dispatchEvent(new CustomEvent('pwa-prompt-ready'))
+})
+window.addEventListener('appinstalled', () => {
+  _deferredInstallPrompt = null
+})
+window.__pwa = {
+  getPrompt: () => _deferredInstallPrompt,
+  clearPrompt: () => { _deferredInstallPrompt = null },
+}
+
 import { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
