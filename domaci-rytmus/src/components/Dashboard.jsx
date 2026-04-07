@@ -300,7 +300,24 @@ function SmartCard({ period, urgentTasks, thirstyPlants, pendingShopping, budget
 
 // ─── Weather widget ───────────────────────────────────────────────────────────
 function WeatherWidget({ weather, loading, locationDenied, refresh }) {
-  if (locationDenied) return null
+  // Location denied — show how to re-enable
+  if (locationDenied) {
+    return (
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 flex items-center gap-3">
+        <span className="text-2xl flex-shrink-0">🌤️</span>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">Počasie je vypnuté</div>
+          <div className="text-xs text-slate-400 mt-0.5 leading-snug">
+            Povoľ polohu v nastaveniach prehliadača (🔒 alebo ℹ️ vedľa adresy)
+          </div>
+        </div>
+        <button onClick={refresh}
+          className="flex-shrink-0 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2 rounded-xl active:scale-95 transition-transform">
+          Skúsiť znova
+        </button>
+      </div>
+    )
+  }
 
   if (loading && !weather) {
     return (
@@ -316,7 +333,20 @@ function WeatherWidget({ weather, loading, locationDenied, refresh }) {
     )
   }
 
-  if (!weather) return null
+  // Not loading, no weather yet — offer to enable
+  if (!weather) {
+    return (
+      <button onClick={refresh}
+        className="w-full bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 flex items-center gap-3 active:scale-95 transition-transform text-left">
+        <span className="text-2xl flex-shrink-0">🌤️</span>
+        <div className="flex-1">
+          <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">Zobraziť počasie</div>
+          <div className="text-xs text-slate-400 mt-0.5">Klepni — potrebuje povolenie polohy</div>
+        </div>
+        <RefreshCw size={16} className={`text-slate-400 flex-shrink-0 ${loading ? 'animate-spin' : ''}`} />
+      </button>
+    )
+  }
 
   const age = Math.round((Date.now() - weather.updatedAt) / 60000)
 
