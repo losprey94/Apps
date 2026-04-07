@@ -330,26 +330,31 @@ export default function Budget() {
   const [showAllExp, setShowAllExp] = useState(false)
   const [expandedCats, setExpandedCats] = useState({})
 
-  const { period, totalBudget, categories } = config
+  const { period, totalBudget, categories } = config || {}
+  const safeCategories = Array.isArray(categories) && categories.length > 0
+    ? categories
+    : DEFAULT_CATEGORIES
+  const safeTotalBudget = totalBudget || 1000
+  const safePeriod      = period || 'monthly'
 
   // Current-period expenses
-  const periodExpenses = useMemo(() => filterByPeriod(expenses, period), [expenses, period])
+  const periodExpenses = useMemo(() => filterByPeriod(expenses || [], safePeriod), [expenses, safePeriod])
 
   const totalSpent = periodExpenses.reduce((s, e) => s + e.amount, 0)
-  const remaining  = totalBudget - totalSpent
-  const totalPct   = totalSpent / totalBudget
+  const remaining  = safeTotalBudget - totalSpent
+  const totalPct   = totalSpent / safeTotalBudget
   const health     = healthColor(totalPct)
 
   // Per-category spending
   const catSpending = useMemo(() => {
     const map = {}
-    for (const cat of categories) map[cat.id] = 0
+    for (const cat of safeCategories) map[cat.id] = 0
     for (const e of periodExpenses) {
       if (map[e.categoryId] !== undefined) map[e.categoryId] += e.amount
       else map['other'] = (map['other'] || 0) + e.amount
     }
     return map
-  }, [periodExpenses, categories])
+  }, [periodExpenses, safeCategories])
 
   // Group expenses by day for the log
   const groupedExpenses = useMemo(() => {
@@ -367,20 +372,20 @@ export default function Budget() {
   const addExpense = (expense) => setExpenses(prev => [expense, ...prev])
   const deleteExpense = (id) => setExpenses(prev => prev.filter(e => e.id !== id))
 
-  const getCat = (id) => categories.find(c => c.id === id) || { name: 'Ostatné', emoji: '💰', color: '#64748b' }
+  const getCat = (id) => safeCategories.find(c => c.id === id) || { name: 'Ostatné', emoji: '💰', color: '#64748b' }
 
   return (
     <>
       {showSetup && (
         <SetupModal
-          config={config}
+          config={{ period: safePeriod, totalBudget: safeTotalBudget, categories: safeCategories }}
           onSave={setConfig}
           onClose={() => setShowSetup(false)}
         />
       )}
       {showAdd && (
         <AddExpenseModal
-          categories={categories}
+          categories={safeCategories}
           onAdd={addExpense}
           onClose={() => setShowAdd(false)}
         />
@@ -398,7 +403,7 @@ export default function Budget() {
             <div className="flex bg-white/15 rounded-xl p-0.5 gap-0.5">
               {[['monthly','Mesačný'],['weekly','Týždenný']].map(([v, l]) => (
                 <button key={v} onClick={() => setConfig(prev => ({ ...prev, period: v }))}
-                  className={`text-xs font-semibold px-3 py-1.5 rounded-[10px] transition-all ${period === v ? 'bg-white text-slate-800' : 'text-white/80'}`}>
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-[10px] transition-all ${safePeriod === v ? 'bg-white text-slate-800' : 'text-white/80'}`}>
                   {l}
                 </button>
               ))}
@@ -410,7 +415,7 @@ export default function Budget() {
           </div>
 
           {/* Period label */}
-          <div className="text-white/70 text-xs font-medium capitalize mb-4">{periodLabel(period)}</div>
+          <div className="text-white/70 text-xs font-medium capitalize mb-4">{periodLabel(safePeriod)}</div>
 
           {/* Ring + numbers */}
           <div className="flex items-center gap-5">
@@ -439,7 +444,7 @@ export default function Budget() {
                 <div className="w-px h-8 bg-white/20" />
                 <div className="text-center">
                   <div className="text-xs text-white/60">Rozpočet</div>
-                  <div className="font-bold text-sm">{fmtEur(totalBudget)}</div>
+                  <div className="font-bold text-sm">{fmtEur(safeTotalBudget)}</div>
                 </div>
               </div>
             </div>
@@ -452,7 +457,7 @@ export default function Budget() {
             <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">Kategórie</span>
           </div>
           <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
-            {categories.map(cat => {
+            {safeCategories.map(cat => {
               const spent  = catSpending[cat.id] || 0
               const pct    = cat.budget > 0 ? spent / cat.budget : 0
               const h      = healthColor(pct)
