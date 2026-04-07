@@ -22,7 +22,7 @@ function decodeShare(str) {
 }
 
 function SyncPanel() {
-  const { householdCode, syncStatus, isConfigured, isConnected, createHousehold, joinHousehold, leaveHousehold } = useSync()
+  const { householdCode, syncStatus, isConfigured, isConnected, autoJoining, createHousehold, joinHousehold, leaveHousehold } = useSync()
   const [joinCode, setJoinCode] = useState('')
   const [showJoin, setShowJoin] = useState(false)
   const [joinError, setJoinError] = useState('')
@@ -34,6 +34,18 @@ function SyncPanel() {
     return (
       <div className="bg-slate-100 dark:bg-slate-700/60 rounded-2xl p-4 text-center text-sm text-slate-500 dark:text-slate-400">
         Firebase nie je nakonfigurovaný. Pozri README pre inštrukcie.
+      </div>
+    )
+  }
+
+  if (autoJoining) {
+    return (
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-5 flex items-center gap-3">
+        <Loader size={18} className="text-emerald-500 animate-spin flex-shrink-0" />
+        <div>
+          <div className="font-semibold text-slate-700 dark:text-slate-300 text-sm">Načítavam tvoju domácnosť…</div>
+          <div className="text-xs text-slate-400 mt-0.5">Hľadám dáta prepojené s tvojim Google účtom</div>
+        </div>
       </div>
     )
   }

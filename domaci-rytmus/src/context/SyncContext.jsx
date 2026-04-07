@@ -5,15 +5,35 @@ import { useLocalStorage } from '../hooks/useLocalStorage'
 
 const SyncContext = createContext(null)
 
-export function SyncProvider({ children }) {
+export function SyncProvider({ children, uid }) {
   const [householdCode, setHouseholdCode] = useLocalStorage('household-code', null)
-  const [syncStatus, setSyncStatus] = useState('offline') // 'offline'|'connecting'|'synced'|'error'
+  const [syncStatus, setSyncStatus] = useState('offline')
   const [householdData, setHouseholdData] = useState({})
+  const [autoJoining, setAutoJoining] = useState(false)
   const unsubRef = useRef(null)
-  const docRef = useRef(null)
+  const docRef  = useRef(null)
 
   const isConfigured = !!db
 
+  // ── Auto-join: when user logs in on new device, load their household code ──
+  useEffect(() => {
+    if (!isConfigured || !uid || householdCode) return   // already have a code
+
+    const lookupAndJoin = async () => {
+      setAutoJoining(true)
+      try {
+        const userDoc = await getDoc(doc(db, 'users', uid))
+        if (userDoc.exists()) {
+          const code = userDoc.data().householdCode
+          if (code) setHouseholdCode(code)
+        }
+      } catch {}
+      setAutoJoining(false)
+    }
+    lookupAndJoin()
+  }, [uid, isConfigured, householdCode, setHouseholdCode])
+
+  // ── Realtime listener ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!isConfigured || !householdCode) {
       setSyncStatus('offline')
@@ -44,36 +64,46 @@ export function SyncProvider({ children }) {
     return () => { if (unsubRef.current) { unsubRef.current(); unsubRef.current = null } }
   }, [householdCode, isConfigured])
 
+  // ── Save uid → householdCode mapping in Firestore ─────────────────────────
+  const saveUserMapping = useCallback(async (code) => {
+    if (!db || !uid) return
+    try {
+      await setDoc(doc(db, 'users', uid), { householdCode: code }, { merge: true })
+    } catch {}
+  }, [uid])
+
   const createHousehold = useCallback(async () => {
     if (!isConfigured) return null
     const code = Math.random().toString(36).substring(2, 8).toUpperCase()
-    const ref = doc(db, 'households', code)
-    await setDoc(ref, {
-      shopping: [],
-      tasks: [],
-      plants: [],
-      'family-members': [],
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+    await setDoc(doc(db, 'households', code), {
+      shopping: [], tasks: [], plants: [], 'family-members': [],
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
     })
     setHouseholdCode(code)
+    await saveUserMapping(code)
     return code
-  }, [isConfigured, setHouseholdCode])
+  }, [isConfigured, setHouseholdCode, saveUserMapping])
 
   const joinHousehold = useCallback(async (code) => {
     if (!isConfigured) return false
     const ref = doc(db, 'households', code.toUpperCase().trim())
     const snap = await getDoc(ref)
     if (!snap.exists()) return false
-    setHouseholdCode(code.toUpperCase().trim())
+    const clean = code.toUpperCase().trim()
+    setHouseholdCode(clean)
+    await saveUserMapping(clean)
     return true
-  }, [isConfigured, setHouseholdCode])
+  }, [isConfigured, setHouseholdCode, saveUserMapping])
 
-  const leaveHousehold = useCallback(() => {
+  const leaveHousehold = useCallback(async () => {
+    // Remove uid → household mapping so next login doesn't auto-rejoin
+    if (db && uid) {
+      try { await setDoc(doc(db, 'users', uid), { householdCode: null }, { merge: true }) } catch {}
+    }
     setHouseholdCode(null)
     setHouseholdData({})
     setSyncStatus('offline')
-  }, [setHouseholdCode])
+  }, [setHouseholdCode, uid])
 
   const updateHousehold = useCallback(async (key, value) => {
     if (!docRef.current) return
@@ -91,6 +121,7 @@ export function SyncProvider({ children }) {
       householdData,
       isConfigured,
       isConnected: syncStatus === 'synced',
+      autoJoining,
       createHousehold,
       joinHousehold,
       leaveHousehold,
@@ -119,11 +150,10 @@ export function useSyncedStorage(key, defaultValue) {
   }, [isConnected, householdData, key, setLocalValue])
 
   const setValue = useCallback((newValueOrFn) => {
-    // Use localValue (always current) for functional updates
     const resolved = typeof newValueOrFn === 'function' ? newValueOrFn(localValue) : newValueOrFn
-    setLocalValue(resolved)             // ← immediate optimistic UI update
-    if (isConnected) updateHousehold(key, resolved)  // ← async Firestore write
+    setLocalValue(resolved)
+    if (isConnected) updateHousehold(key, resolved)
   }, [localValue, isConnected, key, setLocalValue, updateHousehold])
 
-  return [localValue, setValue]  // always return localValue — immediate responsiveness
+  return [localValue, setValue]
 }

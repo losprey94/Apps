@@ -240,13 +240,19 @@ function AppInner() {
   )
 }
 
+// Bridge: passes uid from AuthContext into SyncProvider
+function SyncBridge({ children }) {
+  const { user } = useAuth()
+  return <SyncProvider uid={user?.uid || null}>{children}</SyncProvider>
+}
+
 export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <SyncProvider>
+        <SyncBridge>
           <AppInner />
-        </SyncProvider>
+        </SyncBridge>
       </AuthProvider>
     </ThemeProvider>
   )
