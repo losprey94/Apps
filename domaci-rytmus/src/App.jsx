@@ -13,6 +13,7 @@ import History from './components/History'
 import Family from './components/Family'
 import Budget from './components/Budget'
 import More from './components/More'
+import InstallPrompt from './components/InstallPrompt'
 import { ThemeProvider, THEMES } from './context/ThemeContext'
 import { SyncProvider, useSync } from './context/SyncContext'
 import { useLocalStorage } from './hooks/useLocalStorage'
@@ -180,6 +181,13 @@ function AppInner() {
         <main className="flex-1 overflow-y-auto px-4 pt-4 pb-28">
           {renderContent()}
         </main>
+
+        {/* PWA Install Banner */}
+        <div className="fixed bottom-[72px] left-0 right-0 z-20 pointer-events-none">
+          <div className="w-full max-w-lg mx-auto pointer-events-auto">
+            <InstallPrompt />
+          </div>
+        </div>
 
         {/* Bottom Nav */}
         <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
