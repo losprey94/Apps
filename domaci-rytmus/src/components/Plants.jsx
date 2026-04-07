@@ -3,6 +3,7 @@ import { Droplets, Plus, Trash2, Leaf, X } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useSyncedStorage } from '../context/SyncContext'
 import { useHistory } from '../hooks/useHistory'
+import { useHaptic } from '../hooks/useHaptic'
 
 const DEFAULT_PLANTS = [
   { id: 1, name: 'Monstera', emoji: '🌿', intervalDays: 7, lastWatered: null, location: 'Obývačka' },
@@ -41,16 +42,18 @@ export default function Plants() {
   const [location, setLocation] = useState('')
   const [justWatered, setJustWatered] = useState(null)
   const { addEvent } = useHistory()
+  const haptic = useHaptic()
 
   const water = (id) => {
     const plant = plants.find(p => p.id === id)
     setPlants(plants.map(p => p.id === id ? { ...p, lastWatered: new Date().toISOString() } : p))
     if (plant) addEvent('plants', plant.emoji, 'Zaliata', plant.name)
+    haptic.success()
     setJustWatered(id)
     setTimeout(() => setJustWatered(null), 1200)
   }
 
-  const deletePlant = (id) => setPlants(plants.filter(p => p.id !== id))
+  const deletePlant = (id) => { haptic.tap(); setPlants(plants.filter(p => p.id !== id)) }
 
   const addPlant = (e) => {
     e.preventDefault()
@@ -63,6 +66,7 @@ export default function Plants() {
       lastWatered: null,
       location: location.trim(),
     }])
+    haptic.done()
     setName('')
     setEmoji('🪴')
     setInterval('7')

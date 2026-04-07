@@ -3,6 +3,7 @@ import { Plus, Trash2, Check, ShoppingCart, X, ChevronDown, ChevronRight, Credit
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useSyncedStorage } from '../context/SyncContext'
 import LoyaltyCards from './LoyaltyCards'
+import { useHaptic } from '../hooks/useHaptic'
 
 const CATEGORIES = [
   { id: 'zelenina', label: 'Zelenina & Ovocie', emoji: '🥦' },
@@ -32,13 +33,19 @@ function ShoppingList() {
   const [showForm, setShowForm] = useState(false)
   const [expandedCategories, setExpandedCategories] = useLocalStorage('shopping-expanded', {})
   const [showDone, setShowDone] = useLocalStorage('shopping-show-done', true)
+  const haptic = useHaptic()
 
-  const toggleItem = (id) => setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
-  const deleteItem = (id) => setItems(items.filter(i => i.id !== id))
-  const clearDone = () => setItems(items.filter(i => !i.done))
+  const toggleItem = (id) => {
+    const item = items.find(i => i.id === id)
+    haptic[item?.done ? 'tap' : 'success']()
+    setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
+  }
+  const deleteItem = (id) => { haptic.tap(); setItems(items.filter(i => i.id !== id)) }
+  const clearDone = () => { haptic.tap(); setItems(items.filter(i => !i.done)) }
 
   const addItem = (name, cat = selectedCategory, qty = quantity) => {
     if (!name.trim()) return
+    haptic.light()
     setItems([...items, {
       id: Date.now(),
       name: name.trim(),

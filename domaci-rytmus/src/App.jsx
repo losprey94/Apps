@@ -4,6 +4,7 @@ import Tasks from './components/Tasks'
 import Plants from './components/Plants'
 import Shopping from './components/Shopping'
 import Dashboard from './components/Dashboard'
+import Onboarding from './components/Onboarding'
 import Settings from './components/Settings'
 import Pets from './components/Pets'
 import Energy from './components/Energy'
@@ -82,6 +83,7 @@ function SyncIndicator() {
 function AppInner() {
   const [activeTab, setActiveTab] = useLocalStorage('active-tab', 'home')
   const [subPage, setSubPage] = useState(null)
+  const [onboardingDone, setOnboardingDone] = useLocalStorage('onboarding-done', false)
   const [darkMode] = useLocalStorage('dark-mode', false)
   const [colorTheme] = useLocalStorage('color-theme', 'indigo')
   const { isConnected, householdData } = useSync()
@@ -140,6 +142,10 @@ function AppInner() {
       case 'more':     return <More onNavigate={navigate} />
       default:         return <Dashboard onNavigate={navigate} />
     }
+  }
+
+  if (!onboardingDone) {
+    return <Onboarding onFinish={() => setOnboardingDone(true)} />
   }
 
   return (

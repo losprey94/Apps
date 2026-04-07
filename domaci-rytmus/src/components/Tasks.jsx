@@ -3,6 +3,7 @@ import { CheckCircle2, Plus, Trash2, Clock, AlertCircle, CheckCheck, X, ChevronD
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useSyncedStorage } from '../context/SyncContext'
 import { useHistory } from '../hooks/useHistory'
+import { useHaptic } from '../hooks/useHaptic'
 
 const DEFAULT_TASKS = [
   { id: 1, name: 'Odvápnenie kávovaru',       intervalDays: 30, lastDone: null, deadline: null },
@@ -150,6 +151,7 @@ export default function Tasks() {
   const [tasks, setTasks] = useSyncedStorage('tasks', DEFAULT_TASKS)
   const [members] = useSyncedStorage('family-members', [])
   const { addEvent } = useHistory()
+  const haptic = useHaptic()
 
   const [showForm, setShowForm]     = useState(false)
   const [name, setName]             = useState('')
@@ -164,11 +166,12 @@ export default function Tasks() {
     const task = tasks.find(t => t.id === id)
     setTasks(tasks.map(t => t.id === id ? { ...t, lastDone: new Date().toISOString() } : t))
     if (task) addEvent('tasks', '✅', 'Hotovo', task.name)
+    haptic.success()
     setJustDone(id)
     setTimeout(() => setJustDone(null), 1200)
   }
 
-  const deleteTask = (id) => setTasks(tasks.filter(t => t.id !== id))
+  const deleteTask = (id) => { haptic.tap(); setTasks(tasks.filter(t => t.id !== id)) }
 
   const addTask = (e) => {
     e.preventDefault()
@@ -181,6 +184,7 @@ export default function Tasks() {
       deadline: deadline || null,
       assignedTo: assignedTo || null,
     }])
+    haptic.done()
     setName(''); setInterval('30'); setDeadline(''); setAssignedTo('')
     setShowForm(false)
   }
