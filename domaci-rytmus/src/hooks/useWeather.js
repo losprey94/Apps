@@ -68,23 +68,32 @@ export function useWeather() {
     }
   }
 
-  const refresh = () => {
+  const requestLocation = () => {
     if (!navigator.geolocation) return
-    // Skip if fresh cache exists
-    try {
-      const c = JSON.parse(localStorage.getItem(CACHE_KEY))
-      if (c && Date.now() - c.updatedAt < CACHE_MS) { setWeather(c); return }
-    } catch {}
-
     setLoading(true)
+    setDenied(false)
     navigator.geolocation.getCurrentPosition(
       pos => load(pos.coords.latitude, pos.coords.longitude),
       err => { setLoading(false); if (err.code === 1) setDenied(true) },
-      { timeout: 8000, maximumAge: CACHE_MS }
+      { timeout: 10000, maximumAge: CACHE_MS }
     )
   }
 
-  useEffect(() => { refresh() }, []) // eslint-disable-line
+  // refresh: used by the "Skúsiť znova" button — always asks for location
+  const refresh = requestLocation
+
+  useEffect(() => {
+    // On mount: only load from cache, never auto-request location
+    // (auto-requests without user gesture are silently blocked on mobile)
+    try {
+      const c = JSON.parse(localStorage.getItem(CACHE_KEY))
+      if (c && Date.now() - c.updatedAt < CACHE_MS) {
+        setWeather(c)
+        return
+      }
+    } catch {}
+    // Cache empty or expired — show the "tap to enable" card, don't auto-request
+  }, [])
 
   return { weather, loading, locationDenied, refresh }
 }
