@@ -1,9 +1,22 @@
-import { useState } from 'react'
-import { CheckCircle2, Droplets, ShoppingCart, ChevronRight, Zap, CreditCard, Wallet, Wind, MapPin, RefreshCw } from 'lucide-react'
+import { useState, useCallback, useRef } from 'react'
+import { CheckCircle2, Droplets, ShoppingCart, ChevronRight, Zap, CreditCard, Wallet, Wind, MapPin, RefreshCw, Settings, X, ChevronUp, ChevronDown, GripVertical } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useSyncedStorage } from '../context/SyncContext'
 import { CardViewer } from './LoyaltyCards'
 import { useWeather } from '../hooks/useWeather'
+
+// ─── Widget registry ──────────────────────────────────────────────────────────
+const WIDGET_DEFS = [
+  { id: 'weather',      label: 'Počasie',           emoji: '🌤️' },
+  { id: 'smart',        label: 'Denný tip',          emoji: '💡' },
+  { id: 'mealtoday',    label: 'Dnešný jedálniček',  emoji: '🍽️' },
+  { id: 'budget',       label: 'Rozpočet',           emoji: '💶' },
+  { id: 'budgetchart',  label: 'Graf výdavkov',      emoji: '📊' },
+  { id: 'loyaltycards', label: 'Rýchle karty',       emoji: '💳' },
+  { id: 'quicknav',     label: 'Rýchla navigácia',   emoji: '🗂️' },
+  { id: 'quote',        label: 'Citát',              emoji: '💬' },
+]
+const DEFAULT_WIDGETS = ['weather','smart','mealtoday','budget','budgetchart','loyaltycards','quicknav','quote']
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function getDaysSince(d) {
@@ -41,6 +54,15 @@ function fmtDate() {
 function fmtEur(n) {
   return new Intl.NumberFormat('sk-SK', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
 }
+function toLocalDateKey(date = new Date()) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+const SK_MONTHS_SHORT = ['jan','feb','mar','apr','máj','jún','júl','aug','sep','okt','nov','dec']
+const MEAL_SLOT_LABELS = { breakfast: 'Raňajky', lunch: 'Obed', dinner: 'Večera', snack: 'Desiata' }
+const MEAL_SLOT_EMOJI  = { breakfast: '🌅', lunch: '☀️', dinner: '🌙', snack: '🍎' }
 
 // ─── Time periods ─────────────────────────────────────────────────────────────
 const PERIODS = [
@@ -388,6 +410,218 @@ function WeatherWidget({ weather, loading, locationDenied, refresh }) {
   )
 }
 
+// ─── Today's meal widget ──────────────────────────────────────────────────────
+function TodayMealsWidget({ onNavigate }) {
+  const [mealPlan] = useSyncedStorage('meal-plan', {})
+  const todayKey   = toLocalDateKey()
+  const todayData  = mealPlan[todayKey] || {}
+  // Collect all people's meals for each slot (prefer 'adults' or first key)
+  const slots = ['breakfast', 'lunch', 'dinner', 'snack']
+  const personsKeys = Object.keys(todayData)
+  const hasMeals = personsKeys.some(pk => slots.some(s => todayData[pk]?.[s]))
+
+  return (
+    <button onClick={() => onNavigate('mealplan')}
+      className="w-full bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden active:scale-95 transition-transform text-left">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 dark:border-slate-700">
+        <div className="flex items-center gap-2">
+          <span className="text-base">🍽️</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Dnešný jedálniček</span>
+        </div>
+        <ChevronRight size={14} className="text-slate-400" />
+      </div>
+      {hasMeals ? (
+        <div className="p-3 grid grid-cols-2 gap-2">
+          {slots.map(slot => {
+            const meal = personsKeys.map(pk => todayData[pk]?.[slot]).find(Boolean)
+            if (!meal) return null
+            return (
+              <div key={slot} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl px-3 py-2">
+                <span className="text-sm flex-shrink-0">{MEAL_SLOT_EMOJI[slot]}</span>
+                <div className="min-w-0">
+                  <div className="text-[10px] text-slate-400 font-medium">{MEAL_SLOT_LABELS[slot]}</div>
+                  <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate leading-tight">
+                    {meal.emoji && !meal.thumb ? meal.emoji + ' ' : ''}{meal.name}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="px-4 py-4 text-center">
+          <p className="text-xs text-slate-400">Žiadne jedlá naplánované na dnes</p>
+          <p className="text-[10px] text-slate-300 dark:text-slate-600 mt-0.5">Klepni a naplánuj jedálniček</p>
+        </div>
+      )}
+    </button>
+  )
+}
+
+// ─── Spending chart widget ─────────────────────────────────────────────────────
+function SpendingChartWidget({ budgetExpenses, onNavigate }) {
+  const now    = new Date()
+  // Build last 6 months array (oldest → newest)
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+    return { year: d.getFullYear(), month: d.getMonth(), label: SK_MONTHS_SHORT[d.getMonth()] }
+  })
+  const totals = months.map(({ year, month }) =>
+    budgetExpenses
+      .filter(e => { const d = new Date(e.date); return d.getFullYear() === year && d.getMonth() === month })
+      .reduce((s, e) => s + e.amount, 0)
+  )
+  const maxVal = Math.max(...totals, 1)
+
+  if (totals.every(v => v === 0)) {
+    return (
+      <button onClick={() => onNavigate('budget')}
+        className="w-full bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 text-left active:scale-95 transition-transform">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-base">📊</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Graf výdavkov</span>
+        </div>
+        <p className="text-xs text-slate-400 text-center py-3">Zatiaľ žiadne výdavky nezaznamenané</p>
+      </button>
+    )
+  }
+
+  return (
+    <button onClick={() => onNavigate('budget')}
+      className="w-full bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 text-left active:scale-95 transition-transform">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-base">📊</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Výdavky — posledných 6 mesiacov</span>
+        </div>
+        <ChevronRight size={14} className="text-slate-400" />
+      </div>
+      <div className="flex items-end gap-1.5 h-24">
+        {totals.map((val, i) => {
+          const pct    = val / maxVal
+          const isCur  = i === 5
+          const color  = isCur ? '#6366f1' : '#cbd5e1'
+          const dcColor = isCur ? '#818cf8' : '#475569'
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+              <div className="w-full flex flex-col justify-end" style={{ height: '72px' }}>
+                <div
+                  className="w-full rounded-t-lg transition-all duration-500"
+                  style={{ height: `${Math.max(pct * 100, val > 0 ? 8 : 0)}%`, backgroundColor: color }}
+                />
+              </div>
+              <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500">{months[i].label}</span>
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex justify-between mt-2">
+        <span className="text-[10px] text-slate-400">Tento mesiac</span>
+        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{fmtEur(totals[5])}</span>
+      </div>
+    </button>
+  )
+}
+
+// ─── Dashboard customizer modal ────────────────────────────────────────────────
+function DashboardCustomizer({ widgets, onSave, onClose }) {
+  const [order, setOrder] = useState(widgets)
+  const allIds   = WIDGET_DEFS.map(w => w.id)
+  const hidden   = allIds.filter(id => !order.includes(id))
+
+  const move = (id, dir) => {
+    const idx = order.indexOf(id)
+    if (dir === 'up' && idx === 0) return
+    if (dir === 'down' && idx === order.length - 1) return
+    const next = [...order]
+    const swap = dir === 'up' ? idx - 1 : idx + 1
+    ;[next[idx], next[swap]] = [next[swap], next[idx]]
+    setOrder(next)
+  }
+  const remove = id => setOrder(order.filter(x => x !== id))
+  const add    = id => setOrder([...order, id])
+
+  const def = id => WIDGET_DEFS.find(w => w.id === id)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-t-3xl shadow-2xl max-h-[80vh] flex flex-col"
+        onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
+          <div>
+            <div className="font-bold text-slate-800 dark:text-slate-200">Prispôsobiť dashboard</div>
+            <div className="text-xs text-slate-400 mt-0.5">Pridaj, odober alebo zmeň poradie</div>
+          </div>
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-xl">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 p-5 flex flex-col gap-4">
+          {/* Active widgets */}
+          <div>
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Zobrazené</div>
+            <div className="flex flex-col gap-2">
+              {order.map((id, i) => {
+                const w = def(id)
+                if (!w) return null
+                return (
+                  <div key={id} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700/60 rounded-2xl px-3 py-2.5">
+                    <span className="text-lg flex-shrink-0">{w.emoji}</span>
+                    <span className="flex-1 text-sm font-medium text-slate-700 dark:text-slate-300">{w.label}</span>
+                    <button onClick={() => move(id, 'up')} disabled={i === 0}
+                      className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30 transition-colors">
+                      <ChevronUp size={15} />
+                    </button>
+                    <button onClick={() => move(id, 'down')} disabled={i === order.length - 1}
+                      className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30 transition-colors">
+                      <ChevronDown size={15} />
+                    </button>
+                    <button onClick={() => remove(id)}
+                      className="p-1 text-rose-400 hover:text-rose-600 transition-colors ml-1">
+                      <X size={14} />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Hidden widgets */}
+          {hidden.length > 0 && (
+            <div>
+              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Dostupné</div>
+              <div className="flex flex-col gap-2">
+                {hidden.map(id => {
+                  const w = def(id)
+                  if (!w) return null
+                  return (
+                    <button key={id} onClick={() => add(id)}
+                      className="flex items-center gap-3 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-2xl px-3 py-2.5 active:scale-95 transition-transform text-left w-full">
+                      <span className="text-lg flex-shrink-0">{w.emoji}</span>
+                      <span className="flex-1 text-sm font-medium text-slate-500 dark:text-slate-400">{w.label}</span>
+                      <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">+ Pridať</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="px-5 pb-5 pt-2 flex-shrink-0 border-t border-slate-100 dark:border-slate-700">
+          <button onClick={() => { onSave(order); onClose() }}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl transition-colors active:scale-95 text-sm">
+            Uložiť
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 const QUOTES = [
   'Malé kroky každý deň vedú k veľkým zmenám.',
@@ -398,15 +632,17 @@ const QUOTES = [
 ]
 
 export default function Dashboard({ onNavigate }) {
-  const [tasks, setTasks]   = useLocalStorage('tasks', [])
-  const [plants, setPlants] = useLocalStorage('plants', [])
-  const [shopping]          = useLocalStorage('shopping', [])
+  const [tasks, setTasks]   = useSyncedStorage('tasks', [])
+  const [plants, setPlants] = useSyncedStorage('plants', [])
+  const [shopping]          = useSyncedStorage('shopping', [])
   const [userName]          = useLocalStorage('user-name', '')
   const [userEmoji]         = useLocalStorage('user-emoji', '😊')
   const [showQuotes]        = useLocalStorage('show-quotes', true)
   const [loyaltyCards]      = useSyncedStorage('loyalty-cards', [])
   const [budgetConfig]      = useSyncedStorage('budget-config', { period: 'monthly', totalBudget: 1000 })
   const [budgetExpenses]    = useSyncedStorage('budget-expenses', [])
+  const [dashWidgets, setDashWidgets] = useLocalStorage('dashboard-widgets', DEFAULT_WIDGETS)
+  const [showCustomizer, setShowCustomizer] = useState(false)
   const [viewCard, setViewCard] = useState(null)
 
   const { weather, loading: wLoading, locationDenied, refresh: wRefresh } = useWeather()
@@ -430,9 +666,137 @@ export default function Dashboard({ onNavigate }) {
 
   const todayQuote = QUOTES[new Date().getDay() % QUOTES.length]
 
+  // Ensure all DEFAULT_WIDGETS are present (new widgets added later should auto-appear)
+  const safeWidgets = [
+    ...dashWidgets.filter(id => WIDGET_DEFS.some(w => w.id === id)),
+    ...DEFAULT_WIDGETS.filter(id => !dashWidgets.includes(id)),
+  ]
+
+  const renderWidget = id => {
+    switch (id) {
+      case 'weather':
+        return <WeatherWidget key="weather" weather={weather} loading={wLoading} locationDenied={locationDenied} refresh={wRefresh} />
+
+      case 'smart':
+        return (
+          <SmartCard key="smart"
+            period={period}
+            urgentTasks={urgentTasks}
+            thirstyPlants={thirstyPlants}
+            pendingShopping={pendingShopping}
+            budgetSpent={budgetSpent}
+            budgetTotal={budgetTotal}
+            budgetOk={budgetOk}
+            onNavigate={onNavigate}
+            onQuickDone={quickDone}
+            onQuickWater={quickWater}
+          />
+        )
+
+      case 'mealtoday':
+        return <TodayMealsWidget key="mealtoday" onNavigate={onNavigate} />
+
+      case 'budget':
+        return budgetOk ? (
+          <button key="budget" onClick={() => onNavigate('budget')}
+            className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 text-left active:scale-95 transition-transform w-full">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Wallet size={15} style={{ color: budgetColor }} />
+                <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
+                  {budgetConfig.period === 'monthly' ? 'Mesačný rozpočet' : 'Týždenný rozpočet'}
+                </span>
+              </div>
+              <ChevronRight size={14} className="text-slate-400" />
+            </div>
+            <div className="flex items-end justify-between mb-2">
+              <div>
+                <span className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+                  {fmtEur(Math.max(budgetTotal - budgetSpent, 0))}
+                </span>
+                <div className="text-xs text-slate-400 mt-0.5">zostatok</div>
+              </div>
+              <div className="text-right">
+                <span className="text-sm font-semibold" style={{ color: budgetColor }}>{Math.round(budgetPct * 100)}%</span>
+                <div className="text-xs text-slate-400">minuto</div>
+              </div>
+            </div>
+            <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${budgetPct * 100}%`, backgroundColor: budgetColor }} />
+            </div>
+          </button>
+        ) : null
+
+      case 'budgetchart':
+        return <SpendingChartWidget key="budgetchart" budgetExpenses={budgetExpenses} onNavigate={onNavigate} />
+
+      case 'loyaltycards':
+        return pinnedCards.length > 0 ? (
+          <div key="loyaltycards" className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 dark:border-slate-700">
+              <div className="flex items-center gap-2">
+                <CreditCard size={14} className="text-amber-500" />
+                <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Rýchle karty</span>
+              </div>
+              <button onClick={() => onNavigate('shopping')} className="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-0.5">
+                Všetky <ChevronRight size={13} />
+              </button>
+            </div>
+            <div className="flex gap-3 p-4">
+              {pinnedCards.map(card => (
+                <button key={card.id} onClick={() => setViewCard(card)}
+                  className="flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl active:scale-95 transition-transform"
+                  style={{ backgroundColor: card.color + '15', border: `2px solid ${card.color}30` }}>
+                  <span className="text-3xl">{card.emoji}</span>
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{card.storeName}</span>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: card.color }}>QR kód</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null
+
+      case 'quicknav':
+        return (
+          <div key="quicknav" className="grid grid-cols-3 gap-3">
+            {[
+              { id: 'tasks',    emoji: '✅', label: 'Úlohy',    count: tasks.length },
+              { id: 'plants',   emoji: '🪴', label: 'Rastliny', count: plants.length },
+              { id: 'shopping', emoji: '🛒', label: 'Nákup',    count: pendingShopping.length },
+            ].map(item => (
+              <button key={item.id} onClick={() => onNavigate(item.id)}
+                className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-3.5 flex flex-col items-center gap-1.5 shadow-sm active:scale-95 transition-transform">
+                <span className="text-2xl">{item.emoji}</span>
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{item.label}</span>
+                <span className="text-lg font-bold text-slate-800 dark:text-slate-200">{item.count}</span>
+              </button>
+            ))}
+          </div>
+        )
+
+      case 'quote':
+        return showQuotes ? (
+          <div key="quote" className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 text-center">
+            <div className="text-lg mb-2">💡</div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 italic">"{todayQuote}"</p>
+          </div>
+        ) : null
+
+      default:
+        return null
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4 animate-fade-in">
       {viewCard && <CardViewer card={viewCard} onClose={() => setViewCard(null)} />}
+      {showCustomizer && (
+        <DashboardCustomizer
+          widgets={safeWidgets}
+          onSave={setDashWidgets}
+          onClose={() => setShowCustomizer(false)}
+        />
+      )}
 
       {/* ── Dynamic hero card ─────────────────────────────────────────────── */}
       <div className="rounded-3xl p-5 text-white shadow-lg relative overflow-hidden"
@@ -447,9 +811,10 @@ export default function Dashboard({ onNavigate }) {
                 : `${totalUrgent} ${totalUrgent === 1 ? 'vec vyžaduje' : 'veci vyžadujú'} pozornosť`}
             </p>
           </div>
-          {/* User emoji + weather temp */}
           <div className="flex flex-col items-center gap-1 flex-shrink-0">
-            <div className="text-3xl">{userEmoji}</div>
+            <button onClick={() => setShowCustomizer(true)}
+              className="text-3xl leading-none active:scale-90 transition-transform"
+              title="Prispôsobiť dashboard">{userEmoji}</button>
             {weather && (
               <div className="flex items-center gap-1 bg-white/15 rounded-xl px-2 py-1">
                 <span className="text-base">{weather.emoji}</span>
@@ -474,105 +839,17 @@ export default function Dashboard({ onNavigate }) {
             <div className="text-xs opacity-70">Nákup</div>
           </button>
         </div>
-      </div>
 
-      {/* ── Weather detail ────────────────────────────────────────────────── */}
-      <WeatherWidget weather={weather} loading={wLoading} locationDenied={locationDenied} refresh={wRefresh} />
-
-      {/* ── Smart context card ────────────────────────────────────────────── */}
-      <SmartCard
-        period={period}
-        urgentTasks={urgentTasks}
-        thirstyPlants={thirstyPlants}
-        pendingShopping={pendingShopping}
-        budgetSpent={budgetSpent}
-        budgetTotal={budgetTotal}
-        budgetOk={budgetOk}
-        onNavigate={onNavigate}
-        onQuickDone={quickDone}
-        onQuickWater={quickWater}
-      />
-
-      {/* ── Pinned loyalty cards ──────────────────────────────────────────── */}
-      {pinnedCards.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 dark:border-slate-700">
-            <div className="flex items-center gap-2">
-              <CreditCard size={14} className="text-amber-500" />
-              <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Rýchle karty</span>
-            </div>
-            <button onClick={() => onNavigate('shopping')} className="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-0.5">
-              Všetky <ChevronRight size={13} />
-            </button>
-          </div>
-          <div className="flex gap-3 p-4">
-            {pinnedCards.map(card => (
-              <button key={card.id} onClick={() => setViewCard(card)}
-                className="flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl active:scale-95 transition-transform"
-                style={{ backgroundColor: card.color + '15', border: `2px solid ${card.color}30` }}>
-                <span className="text-3xl">{card.emoji}</span>
-                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{card.storeName}</span>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: card.color }}>QR kód</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Budget widget ─────────────────────────────────────────────────── */}
-      {budgetOk && (
-        <button onClick={() => onNavigate('budget')}
-          className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 text-left active:scale-95 transition-transform w-full">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Wallet size={15} style={{ color: budgetColor }} />
-              <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
-                {budgetConfig.period === 'monthly' ? 'Mesačný rozpočet' : 'Týždenný rozpočet'}
-              </span>
-            </div>
-            <ChevronRight size={14} className="text-slate-400" />
-          </div>
-          <div className="flex items-end justify-between mb-2">
-            <div>
-              <span className="text-2xl font-bold text-slate-800 dark:text-slate-200">
-                {fmtEur(Math.max(budgetTotal - budgetSpent, 0))}
-              </span>
-              <div className="text-xs text-slate-400 mt-0.5">zostatok</div>
-            </div>
-            <div className="text-right">
-              <span className="text-sm font-semibold" style={{ color: budgetColor }}>{Math.round(budgetPct * 100)}%</span>
-              <div className="text-xs text-slate-400">minuto</div>
-            </div>
-          </div>
-          <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${budgetPct * 100}%`, backgroundColor: budgetColor }} />
-          </div>
+        {/* Customize hint */}
+        <button onClick={() => setShowCustomizer(true)}
+          className="mt-3 flex items-center gap-1.5 text-[10px] font-medium opacity-60 hover:opacity-90 transition-opacity">
+          <Settings size={11} />
+          Prispôsobiť dashboard
         </button>
-      )}
-
-      {/* ── Quick nav grid ────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { id: 'tasks',    emoji: '✅', label: 'Úlohy',    count: tasks.length },
-          { id: 'plants',   emoji: '🪴', label: 'Rastliny', count: plants.length },
-          { id: 'shopping', emoji: '🛒', label: 'Nákup',    count: pendingShopping.length },
-        ].map(item => (
-          <button key={item.id} onClick={() => onNavigate(item.id)}
-            className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-3.5 flex flex-col items-center gap-1.5 shadow-sm active:scale-95 transition-transform">
-            <span className="text-2xl">{item.emoji}</span>
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{item.label}</span>
-            <span className="text-lg font-bold text-slate-800 dark:text-slate-200">{item.count}</span>
-          </button>
-        ))}
       </div>
 
-      {/* ── Quote ─────────────────────────────────────────────────────────── */}
-      {showQuotes && (
-        <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 text-center">
-          <div className="text-lg mb-2">💡</div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 italic">"{todayQuote}"</p>
-        </div>
-      )}
+      {/* ── Configurable widgets ──────────────────────────────────────────── */}
+      {safeWidgets.map(id => renderWidget(id))}
     </div>
   )
 }
