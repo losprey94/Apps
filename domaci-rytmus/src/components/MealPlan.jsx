@@ -18,6 +18,128 @@ const MEAL_SLOTS = [
 const API_CATEGORIES = ['Chicken','Beef','Pork','Lamb','Seafood','Pasta','Vegetarian','Vegan','Breakfast','Dessert','Side','Starter','Miscellaneous']
 const SK_CATEGORIES  = { Chicken:'Kura', Beef:'Hovädzie', Pork:'Bravčové', Lamb:'Jahňacie', Seafood:'Ryby', Pasta:'Cestoviny', Vegetarian:'Vegetariánske', Vegan:'Vegánske', Breakfast:'Raňajky', Dessert:'Dezerty', Side:'Prílohy', Starter:'Predjedlá', Miscellaneous:'Ostatné' }
 
+// Slovak ingredient dictionary (TheMealDB ingredient names → Slovak)
+const SK_INGREDIENTS = {
+  // Mäso & hydina
+  'chicken': 'kura', 'chicken breast': 'kuracie prsia', 'chicken thighs': 'kuracie stehná',
+  'chicken legs': 'kuracie nožičky', 'chicken wings': 'kuracie krídla', 'chicken stock': 'kurací vývar',
+  'beef': 'hovädzie mäso', 'beef mince': 'mleté hovädzie', 'ground beef': 'mleté hovädzie',
+  'beef stock': 'hovädzí vývar', 'steak': 'steak', 'pork': 'bravčové mäso',
+  'pork chops': 'bravčové kotlety', 'pork belly': 'bravčový bôčik', 'bacon': 'slanina',
+  'ham': 'šunka', 'lamb': 'jahňacie mäso', 'lamb mince': 'mleté jahňacie',
+  'turkey': 'morka', 'duck': 'kačica', 'sausage': 'klobása', 'chorizo': 'chorizo',
+  'salami': 'saláma', 'mince': 'mleté mäso', 'veal': 'teľacie mäso',
+  // Ryby & morské plody
+  'salmon': 'losos', 'tuna': 'tuniak', 'cod': 'treska', 'shrimp': 'krevety',
+  'prawns': 'krevety', 'crab': 'krab', 'lobster': 'homár', 'squid': 'kalamár',
+  'anchovies': 'ančovičky', 'sardines': 'sardinky', 'mussels': 'mušle',
+  'clams': 'lastúry', 'fish': 'ryba', 'fish sauce': 'rybacia omáčka',
+  'fish stock': 'rybí vývar', 'sea bass': 'morský vlk', 'tilapia': 'tilapia',
+  // Zelenina
+  'onion': 'cibuľa', 'onions': 'cibuľa', 'garlic': 'cesnak', 'garlic cloves': 'strúčiky cesnaku',
+  'tomato': 'paradajka', 'tomatoes': 'paradajky', 'tomato paste': 'paradajkový pretlak',
+  'tomato sauce': 'paradajková omáčka', 'tomato puree': 'paradajkové pyré',
+  'potato': 'zemiak', 'potatoes': 'zemiaky', 'sweet potato': 'batát',
+  'carrot': 'mrkva', 'carrots': 'mrkva', 'celery': 'zeler', 'leek': 'pór',
+  'pepper': 'paprika', 'red pepper': 'červená paprika', 'green pepper': 'zelená paprika',
+  'yellow pepper': 'žltá paprika', 'bell pepper': 'paprika', 'chilli': 'chili',
+  'chilli pepper': 'chili paprička', 'jalapeno': 'jalapeño',
+  'spinach': 'špenát', 'lettuce': 'šalát', 'cabbage': 'kapusta',
+  'red cabbage': 'červená kapusta', 'broccoli': 'brokolica', 'cauliflower': 'karfiol',
+  'zucchini': 'cuketa', 'courgette': 'cuketa', 'eggplant': 'baklažán',
+  'aubergine': 'baklažán', 'cucumber': 'uhorka', 'mushrooms': 'huby',
+  'mushroom': 'huba', 'peas': 'hrášok', 'corn': 'kukurica', 'sweetcorn': 'kukurica',
+  'asparagus': 'špargľa', 'artichoke': 'artičok', 'fennel': 'fenikel',
+  'pumpkin': 'tekvica', 'squash': 'tekvica', 'beetroot': 'červená repa',
+  'radish': 'reďkovka', 'spring onion': 'jarná cibuľka', 'scallions': 'jarná cibuľka',
+  'shallots': 'šalotka', 'kale': 'kaderavý kel', 'pak choi': 'pak choi',
+  'bok choy': 'pak choi', 'bean sprouts': 'klíčky mungo',
+  // Ovocie
+  'lemon': 'citrón', 'lime': 'limetka', 'orange': 'pomaranč',
+  'lemon juice': 'citrónová šťava', 'lime juice': 'limetková šťava',
+  'apple': 'jablko', 'pear': 'hruška', 'banana': 'banán', 'mango': 'mango',
+  'pineapple': 'ananás', 'coconut': 'kokos', 'coconut milk': 'kokosové mlieko',
+  'coconut cream': 'kokosový krém', 'avocado': 'avokádo', 'strawberry': 'jahoda',
+  'blueberry': 'čučoriedka', 'raspberry': 'malina', 'cherry': 'čerešňa',
+  'grape': 'hrozno', 'raisin': 'hrozienka', 'raisins': 'hrozienka',
+  'cranberries': 'brusnice', 'apricot': 'marhuľa', 'peach': 'broskyňa',
+  'plum': 'slivka', 'fig': 'figa', 'date': 'datle', 'dates': 'datle',
+  // Mliečne výrobky & vajcia
+  'milk': 'mlieko', 'butter': 'maslo', 'cream': 'smotana',
+  'double cream': 'šľahačková smotana', 'sour cream': 'kyslá smotana',
+  'cheese': 'syr', 'cheddar': 'cheddar', 'parmesan': 'parmezán',
+  'mozzarella': 'mozzarella', 'feta': 'feta', 'ricotta': 'ricotta',
+  'cream cheese': 'krémový syr', 'yogurt': 'jogurt', 'yoghurt': 'jogurt',
+  'eggs': 'vajcia', 'egg': 'vajce', 'egg yolk': 'žĺtok', 'egg yolks': 'žĺtky',
+  'egg white': 'bielok', 'egg whites': 'bielky',
+  // Strukoviny
+  'chickpeas': 'cícer', 'lentils': 'šošovica', 'kidney beans': 'fazuľa kidney',
+  'black beans': 'čierna fazuľa', 'cannellini beans': 'cannellini fazuľa',
+  'lentil': 'šošovica', 'beans': 'fazuľa', 'tofu': 'tofu',
+  'edamame': 'edamame', 'hummus': 'hummus',
+  // Obilniny, ryža, cestoviny
+  'rice': 'ryža', 'white rice': 'biela ryža', 'brown rice': 'hnedá ryža',
+  'basmati rice': 'basmati ryža', 'jasmine rice': 'jazmínová ryža',
+  'pasta': 'cestoviny', 'spaghetti': 'špagety', 'penne': 'penne',
+  'tagliatelle': 'tagliatelle', 'lasagne sheets': 'lasagne plátky',
+  'noodles': 'rezance', 'rice noodles': 'ryžové rezance', 'bread': 'chlieb',
+  'breadcrumbs': 'strúhanka', 'flour': 'múka', 'plain flour': 'hladká múka',
+  'self-raising flour': 'prášková múka', 'cornflour': 'kukuričný škrob',
+  'oats': 'ovsené vločky', 'rolled oats': 'ovsené vločky',
+  'couscous': 'kuskus', 'quinoa': 'quinoa', 'polenta': 'polenta',
+  'tortillas': 'tortilly', 'pita bread': 'pita chlieb', 'naan bread': 'naan',
+  // Omáčky, pasty, konzervy
+  'soy sauce': 'sójová omáčka', 'olive oil': 'olivový olej',
+  'vegetable oil': 'rastlinný olej', 'sunflower oil': 'slnečnicový olej',
+  'sesame oil': 'sezamový olej', 'oil': 'olej', 'vinegar': 'ocot',
+  'balsamic vinegar': 'balzamikový ocot', 'red wine vinegar': 'červený vinný ocot',
+  'white wine vinegar': 'biely vinný ocot', 'worcestershire sauce': 'worcestershire omáčka',
+  'oyster sauce': 'ustricová omáčka', 'hoisin sauce': 'hoisin omáčka',
+  'hot sauce': 'pálivá omáčka', 'tabasco': 'tabasco', 'ketchup': 'kečup',
+  'mayonnaise': 'majonéza', 'mustard': 'horčica', 'dijon mustard': 'dijonská horčica',
+  'honey': 'med', 'maple syrup': 'javorový sirup', 'tahini': 'tahini',
+  'pesto': 'pesto', 'miso paste': 'miso pasta', 'curry paste': 'curry pasta',
+  'harissa': 'harissa', 'stock': 'vývar', 'vegetable stock': 'zeleninový vývar',
+  'stock cube': 'bujón', 'broth': 'vývar',
+  // Koreniny & bylinky
+  'salt': 'soľ', 'pepper': 'korenie', 'black pepper': 'čierne korenie',
+  'white pepper': 'biele korenie', 'cumin': 'rasca', 'coriander': 'koriander',
+  'paprika': 'paprika', 'smoked paprika': 'údená paprika', 'turmeric': 'kurkuma',
+  'ginger': 'zázvor', 'cinnamon': 'škorica', 'nutmeg': 'muškátový oriešok',
+  'cloves': 'klinčeky', 'cardamom': 'kardamón', 'star anise': 'badián',
+  'bay leaves': 'bobkový list', 'bay leaf': 'bobkový list', 'thyme': 'tymian',
+  'rosemary': 'rozmarín', 'oregano': 'oregano', 'basil': 'bazalka',
+  'parsley': 'petržlen', 'mint': 'mäta', 'dill': 'kôpor', 'chives': 'pažítka',
+  'tarragon': 'estragon', 'sage': 'šalvia', 'curry powder': 'kari',
+  'garam masala': 'garam masala', 'allspice': 'nové korenie', 'chili powder': 'chili prášok',
+  'cayenne pepper': 'kajenské korenie', 'dried thyme': 'sušený tymian',
+  'mixed herbs': 'zmes byliniek', 'vanilla': 'vanilka', 'vanilla extract': 'vanilkový extrakt',
+  // Orechy & semienka
+  'almonds': 'mandle', 'cashews': 'kešu', 'walnuts': 'vlašské orechy',
+  'peanuts': 'arašidy', 'pine nuts': 'pínové oriešky', 'sesame seeds': 'sezamové semienka',
+  'sunflower seeds': 'slnečnicové semienka', 'pumpkin seeds': 'tekvicové semienka',
+  'flaked almonds': 'mandľové lupienky', 'peanut butter': 'arašidové maslo',
+  'almond flour': 'mandľová múka', 'hazelnuts': 'lieskové orechy',
+  'pistachios': 'pistácie', 'macadamia': 'makadamia',
+  // Sladkosti & pečenie
+  'sugar': 'cukor', 'brown sugar': 'hnedý cukor', 'caster sugar': 'jemný cukor',
+  'icing sugar': 'práškový cukor', 'baking powder': 'prášok do pečiva',
+  'baking soda': 'jedlá sóda', 'cocoa powder': 'kakao', 'chocolate': 'čokoláda',
+  'dark chocolate': 'horká čokoláda', 'white chocolate': 'biela čokoláda',
+  'milk chocolate': 'mliečna čokoláda', 'condensed milk': 'kondenzované mlieko',
+  'golden syrup': 'zlatý sirup', 'treacle': 'melasa',
+  // Víno & ostatné tekutiny
+  'red wine': 'červené víno', 'white wine': 'biele víno', 'beer': 'pivo',
+  'water': 'voda', 'orange juice': 'pomarančový džús',
+  'apple juice': 'jablčný džús',
+}
+
+function translateIngredient(name) {
+  if (!name) return name
+  const lower = name.toLowerCase().trim()
+  return SK_INGREDIENTS[lower] || name
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function getWeekStart(offset = 0) {
   const d = new Date()
@@ -87,13 +209,131 @@ async function apiRandom() {
   return d.meals?.[0] || null
 }
 
+// ─── Custom recipe form ───────────────────────────────────────────────────────
+const CUSTOM_FOOD_EMOJIS = ['🍽️','🥘','🍲','🥗','🍝','🍛','🍜','🥩','🍗','🐟','🥚','🥙','🌮','🫕','🥞','🍕']
+
+function CustomRecipeForm({ onSave, onClose }) {
+  const [name, setName]         = useState('')
+  const [emoji, setEmoji]       = useState('🍽️')
+  const [category, setCategory] = useState('Ostatné')
+  const [ings, setIngs]         = useState([{ name: '', measure: '' }])
+
+  const updateIng = (i, field, val) =>
+    setIngs(prev => prev.map((ing, idx) => idx === i ? { ...ing, [field]: val } : ing))
+  const addIng    = () => setIngs(prev => [...prev, { name: '', measure: '' }])
+  const removeIng = (i) => setIngs(prev => prev.filter((_, idx) => idx !== i))
+
+  const save = (e) => {
+    e.preventDefault()
+    if (!name.trim()) return
+    onSave({
+      id:          'custom_' + Date.now(),
+      name:        name.trim(),
+      thumb:       null,
+      emoji,
+      category,
+      ingredients: ings.filter(i => i.name.trim()).map(i => ({ name: i.name.trim(), measure: i.measure.trim() })),
+      isCustom:    true,
+    })
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col bg-slate-900 overflow-y-auto" onClick={onClose}>
+      <div className="flex flex-col max-w-lg mx-auto w-full min-h-full" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-3 px-4 pt-5 pb-4 border-b border-slate-700">
+          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 text-slate-300">
+            <X size={18} />
+          </button>
+          <div className="text-base font-bold text-white">Nový vlastný recept</div>
+        </div>
+
+        <form onSubmit={save} className="flex flex-col gap-5 p-4 pb-10">
+          {/* Emoji picker */}
+          <div>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Ikona</div>
+            <div className="flex flex-wrap gap-2">
+              {CUSTOM_FOOD_EMOJIS.map(e => (
+                <button key={e} type="button" onClick={() => setEmoji(e)}
+                  className={`text-2xl p-1.5 rounded-xl transition-all ${emoji === e ? 'bg-indigo-600 scale-110' : 'bg-slate-800'}`}>
+                  {e}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Name */}
+          <div>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Názov jedla</div>
+            <input
+              autoFocus type="text"
+              placeholder="napr. Grilované kura s ryžou..."
+              value={name} onChange={e => setName(e.target.value)} required
+              className="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+
+          {/* Category */}
+          <div>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Kategória</div>
+            <div className="flex flex-wrap gap-2">
+              {Object.values(SK_CATEGORIES).filter((v,i,a) => a.indexOf(v) === i).map(c => (
+                <button key={c} type="button" onClick={() => setCategory(c)}
+                  className={`text-xs px-3 py-1.5 rounded-full font-semibold transition-colors ${category === c ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Ingredients */}
+          <div>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Ingrediencie</div>
+            <div className="flex flex-col gap-2">
+              {ings.map((ing, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <input
+                    type="text" placeholder="Surovina..."
+                    value={ing.name} onChange={e => updateIng(i, 'name', e.target.value)}
+                    className="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500"
+                  />
+                  <input
+                    type="text" placeholder="Množstvo"
+                    value={ing.measure} onChange={e => updateIng(i, 'measure', e.target.value)}
+                    className="w-24 bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500"
+                  />
+                  {ings.length > 1 && (
+                    <button type="button" onClick={() => removeIng(i)} className="text-slate-500 hover:text-red-400 transition-colors">
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={addIng}
+                className="flex items-center gap-2 text-xs text-indigo-400 hover:text-indigo-300 transition-colors py-1">
+                <Plus size={14} /> Pridať ingredienciu
+              </button>
+            </div>
+          </div>
+
+          <button type="submit"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl text-sm transition-colors active:scale-95">
+            Uložiť recept
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ─── Recipe picker modal ──────────────────────────────────────────────────────
-function RecipePicker({ onPick, onClose, savedRecipes }) {
-  const [query, setQuery]     = useState('')
-  const [results, setResults] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [cat, setCat]         = useState(null)
-  const [picking, setPicking] = useState(null)
+function RecipePicker({ onPick, onClose, savedRecipes, customRecipes, onSaveCustomRecipe }) {
+  const [query, setQuery]          = useState('')
+  const [results, setResults]      = useState([])
+  const [loading, setLoading]      = useState(false)
+  const [cat, setCat]              = useState(null)
+  const [picking, setPicking]      = useState(null)
+  const [showCustomForm, setShowCustomForm] = useState(false)
   const debounce = useRef(null)
 
   const search = useCallback(async (q) => {
@@ -122,7 +362,6 @@ function RecipePicker({ onPick, onClose, savedRecipes }) {
   const pick = async (meal) => {
     setPicking(meal.idMeal)
     try {
-      // Fetch full details for ingredients if not already available
       const full = meal.strIngredient1 ? meal : await apiFull(meal.idMeal)
       if (!full) return
       onPick({
@@ -135,89 +374,142 @@ function RecipePicker({ onPick, onClose, savedRecipes }) {
     } finally { setPicking(null) }
   }
 
-  const showList = results.length > 0
-  const showSaved = !showList && !loading && savedRecipes.length > 0
+  // Filter custom recipes by query
+  const filteredCustom = query.trim()
+    ? customRecipes.filter(r => r.name.toLowerCase().includes(query.toLowerCase()))
+    : customRecipes
+
+  const showList   = results.length > 0
+  const showCustom = filteredCustom.length > 0
+  const showSaved  = !showList && !showCustom && !loading && savedRecipes.length > 0
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-900" onClick={onClose}>
-      <div className="flex flex-col flex-1 max-w-lg mx-auto w-full" onClick={e => e.stopPropagation()}>
-        {/* Header */}
-        <div className="flex items-center gap-3 px-4 pt-5 pb-3">
-          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 text-slate-300">
-            <X size={18} />
-          </button>
-          <div className="flex-1 flex items-center gap-2 bg-slate-800 rounded-2xl px-4 py-2.5">
-            <Search size={16} className="text-slate-500 flex-shrink-0" />
-            <input
-              autoFocus
-              type="text"
-              placeholder="Hľadaj recept..."
-              value={query}
-              onChange={handleInput}
-              className="flex-1 bg-transparent text-white placeholder-slate-500 text-sm focus:outline-none"
-            />
-            {loading && <Loader size={14} className="text-slate-500 animate-spin flex-shrink-0" />}
+    <>
+      {showCustomForm && (
+        <CustomRecipeForm
+          onSave={(recipe) => { onSaveCustomRecipe(recipe); setShowCustomForm(false) }}
+          onClose={() => setShowCustomForm(false)}
+        />
+      )}
+      <div className="fixed inset-0 z-50 flex flex-col bg-slate-900" onClick={onClose}>
+        <div className="flex flex-col flex-1 max-w-lg mx-auto w-full" onClick={e => e.stopPropagation()}>
+          {/* Header */}
+          <div className="flex items-center gap-2 px-4 pt-5 pb-3">
+            <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 text-slate-300">
+              <X size={18} />
+            </button>
+            <div className="flex-1 flex items-center gap-2 bg-slate-800 rounded-2xl px-4 py-2.5">
+              <Search size={16} className="text-slate-500 flex-shrink-0" />
+              <input
+                autoFocus type="text"
+                placeholder="Hľadaj recept..."
+                value={query} onChange={handleInput}
+                className="flex-1 bg-transparent text-white placeholder-slate-500 text-sm focus:outline-none"
+              />
+              {loading && <Loader size={14} className="text-slate-500 animate-spin flex-shrink-0" />}
+            </div>
+            <button onClick={() => setShowCustomForm(true)}
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-emerald-600 text-white flex-shrink-0" title="Nový vlastný recept">
+              <Plus size={18} />
+            </button>
+          </div>
+
+          {/* Category chips */}
+          <div className="flex gap-2 px-4 pb-3 overflow-x-auto scrollbar-none">
+            <button onClick={() => { setCat('custom'); setQuery('') }}
+              className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full font-semibold transition-colors ${cat === 'custom' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+              ⭐ Vlastné
+            </button>
+            {API_CATEGORIES.map(c => (
+              <button key={c} onClick={() => loadCat(c)}
+                className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full font-semibold transition-colors ${cat === c ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                {SK_CATEGORIES[c]}
+              </button>
+            ))}
+          </div>
+
+          {/* Results */}
+          <div className="flex-1 overflow-y-auto px-4 pb-6 flex flex-col gap-2">
+
+            {/* Custom recipes (own) */}
+            {(showCustom || cat === 'custom') && (
+              <>
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Vlastné recepty</div>
+                {filteredCustom.length === 0 && (
+                  <div className="text-sm text-slate-500 text-center py-4">
+                    Zatiaľ žiadne vlastné recepty.<br />
+                    <button onClick={() => setShowCustomForm(true)} className="text-emerald-400 font-semibold mt-1">+ Pridať recept</button>
+                  </div>
+                )}
+                {filteredCustom.map(r => (
+                  <button key={r.id} onClick={() => onPick(r)}
+                    className="flex items-center gap-3 bg-slate-800 border border-emerald-800/40 rounded-2xl p-3 active:scale-95 transition-transform text-left">
+                    <div className="w-14 h-14 rounded-xl bg-emerald-900/40 flex items-center justify-center text-3xl flex-shrink-0">
+                      {r.emoji || '🍽️'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-white truncate">{r.name}</div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] font-semibold bg-emerald-700/60 text-emerald-300 px-1.5 py-0.5 rounded">Vlastný</span>
+                        <span className="text-xs text-slate-400">{r.category}</span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+                {cat === 'custom' && <div className="mt-1" />}
+              </>
+            )}
+
+            {/* TheMealDB results */}
+            {showList && !showCustom && results.map(meal => (
+              <button key={meal.idMeal} onClick={() => pick(meal)}
+                disabled={picking === meal.idMeal}
+                className="flex items-center gap-3 bg-slate-800 rounded-2xl p-3 active:scale-95 transition-transform text-left disabled:opacity-60">
+                <img src={meal.strMealThumb + '/preview'} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0" loading="lazy" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-white truncate">{meal.strMeal}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">{meal.strCategory || SK_CATEGORIES[cat] || ''}</div>
+                </div>
+                {picking === meal.idMeal && <Loader size={16} className="text-indigo-400 animate-spin flex-shrink-0" />}
+              </button>
+            ))}
+
+            {/* Saved favorites */}
+            {showSaved && (
+              <>
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Naposledy použité</div>
+                {savedRecipes.map(r => (
+                  <button key={r.id} onClick={() => onPick(r)}
+                    className="flex items-center gap-3 bg-slate-800 rounded-2xl p-3 active:scale-95 transition-transform text-left">
+                    {r.thumb
+                      ? <img src={r.thumb + '/preview'} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0" loading="lazy" />
+                      : <div className="w-14 h-14 rounded-xl bg-slate-700 flex items-center justify-center text-3xl flex-shrink-0">{r.emoji || '🍽️'}</div>
+                    }
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-white truncate">{r.name}</div>
+                      <div className="text-xs text-slate-400 mt-0.5">{r.category}</div>
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
+
+            {!showList && !showCustom && !showSaved && !loading && cat !== 'custom' && (
+              <div className="text-center py-12 text-slate-500">
+                <Search size={36} className="mx-auto mb-3 opacity-30" />
+                <div className="text-sm">Zadaj názov jedla alebo vyber kategóriu</div>
+                <div className="text-xs mt-2 text-slate-600">Hľadanie v angličtine (TheMealDB) alebo po slovensky vo vlastných receptoch</div>
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Category chips */}
-        <div className="flex gap-2 px-4 pb-3 overflow-x-auto scrollbar-none">
-          {API_CATEGORIES.map(c => (
-            <button key={c} onClick={() => loadCat(c)}
-              className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full font-semibold transition-colors ${cat === c ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
-              {SK_CATEGORIES[c]}
-            </button>
-          ))}
-        </div>
-
-        {/* Results */}
-        <div className="flex-1 overflow-y-auto px-4 pb-6 flex flex-col gap-2">
-          {/* Saved favorites */}
-          {showSaved && (
-            <>
-              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Uložené recepty</div>
-              {savedRecipes.map(r => (
-                <button key={r.id} onClick={() => onPick(r)}
-                  className="flex items-center gap-3 bg-slate-800 rounded-2xl p-3 active:scale-95 transition-transform text-left">
-                  <img src={r.thumb} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0" loading="lazy" />
-                  <div>
-                    <div className="text-sm font-semibold text-white">{r.name}</div>
-                    <div className="text-xs text-slate-400 mt-0.5">{r.category}</div>
-                  </div>
-                </button>
-              ))}
-              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-2 mb-1">Alebo vyhľadaj recept vyššie</div>
-            </>
-          )}
-
-          {/* Search/category results */}
-          {showList && results.map(meal => (
-            <button key={meal.idMeal} onClick={() => pick(meal)}
-              disabled={picking === meal.idMeal}
-              className="flex items-center gap-3 bg-slate-800 rounded-2xl p-3 active:scale-95 transition-transform text-left disabled:opacity-60">
-              <img src={meal.strMealThumb + '/preview'} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0" loading="lazy" />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-white truncate">{meal.strMeal}</div>
-                <div className="text-xs text-slate-400 mt-0.5">{meal.strCategory || SK_CATEGORIES[cat] || ''}</div>
-              </div>
-              {picking === meal.idMeal && <Loader size={16} className="text-indigo-400 animate-spin flex-shrink-0" />}
-            </button>
-          ))}
-
-          {!showList && !showSaved && !loading && (
-            <div className="text-center py-16 text-slate-500">
-              <Search size={36} className="mx-auto mb-3 opacity-30" />
-              <div className="text-sm">Zadaj názov jedla alebo vyber kategóriu</div>
-            </div>
-          )}
-        </div>
       </div>
-    </div>
+    </>
   )
 }
 
 // ─── Day card ─────────────────────────────────────────────────────────────────
-function DayCard({ dateStr, dayIdx, group, mealPlan, onSetMeal, onClearMeal, savedRecipes, today }) {
+function DayCard({ dateStr, dayIdx, group, mealPlan, onSetMeal, onClearMeal, savedRecipes, customRecipes, onSaveCustomRecipe, today }) {
   const [open, setOpen]       = useState(dateStr === today)
   const [picking, setPicking] = useState(null) // slot id being picked
   const dayPlan = mealPlan[dateStr]?.[group] || {}
@@ -255,7 +547,10 @@ function DayCard({ dateStr, dayIdx, group, mealPlan, onSetMeal, onClearMeal, sav
                 <span className="text-xs font-semibold text-slate-400 w-16 flex-shrink-0">{slot.label}</span>
                 {meal ? (
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <img src={meal.thumb + '/preview'} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" loading="lazy" />
+                    {meal.thumb
+                      ? <img src={meal.thumb + '/preview'} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" loading="lazy" />
+                      : <span className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-base flex-shrink-0">{meal.emoji || '🍽️'}</span>
+                    }
                     <span className="text-sm text-slate-700 dark:text-slate-300 truncate flex-1">{meal.name}</span>
                     <button onClick={() => onClearMeal(dateStr, group, slot.id)} className="text-slate-300 hover:text-red-400 transition-colors flex-shrink-0">
                       <Trash2 size={14} />
@@ -277,6 +572,8 @@ function DayCard({ dateStr, dayIdx, group, mealPlan, onSetMeal, onClearMeal, sav
       {picking && (
         <RecipePicker
           savedRecipes={savedRecipes}
+          customRecipes={customRecipes}
+          onSaveCustomRecipe={onSaveCustomRecipe}
           onPick={meal => { onSetMeal(dateStr, group, picking, meal); setPicking(null) }}
           onClose={() => setPicking(null)}
         />
@@ -287,10 +584,11 @@ function DayCard({ dateStr, dayIdx, group, mealPlan, onSetMeal, onClearMeal, sav
 
 // ─── Main MealPlan component ──────────────────────────────────────────────────
 export default function MealPlan() {
-  const [mealPlan, setMealPlan]     = useSyncedStorage('meal-plan', {})
-  const [shopping, setShopping]     = useSyncedStorage('shopping', [])
-  const [savedRecipes, setSaved]    = useSyncedStorage('saved-recipes', [])
-  const [weekOffset, setWeekOffset] = useState(0)   // 0 = this week, 1 = next week
+  const [mealPlan, setMealPlan]         = useSyncedStorage('meal-plan', {})
+  const [shopping, setShopping]         = useSyncedStorage('shopping', [])
+  const [savedRecipes, setSaved]        = useSyncedStorage('saved-recipes', [])
+  const [customRecipes, setCustomRecipes] = useSyncedStorage('custom-recipes', [])
+  const [weekOffset, setWeekOffset]     = useState(0)   // 0 = this week, 1 = next week
   const [group, setGroup]           = useState('adults') // 'adults' | 'kids'
   const [genDone, setGenDone]       = useState(false)
   const haptic = useHaptic()
@@ -311,8 +609,10 @@ export default function MealPlan() {
         },
       },
     }))
-    // Auto-save to favorites if not already there
-    setSaved(prev => prev.some(r => r.id === meal.id) ? prev : [meal, ...prev].slice(0, 50))
+    // Auto-save to recents if not already there (skip custom — those are in customRecipes)
+    if (!meal.isCustom) {
+      setSaved(prev => prev.some(r => r.id === meal.id) ? prev : [meal, ...prev].slice(0, 50))
+    }
   }, [haptic, setMealPlan, setSaved])
 
   const clearMeal = useCallback((date, grp, slot) => {
@@ -346,7 +646,7 @@ export default function MealPlan() {
       .filter(i => !existingNames.has(i.name.toLowerCase()))
       .map(i => ({
         id: Date.now() + Math.random(),
-        name: i.name + (i.measures.length ? ` (${[...new Set(i.measures)].join(', ')})` : ''),
+        name: translateIngredient(i.name) + (i.measures.length ? ` (${[...new Set(i.measures)].join(', ')})` : ''),
         category: 'ostatne',
         quantity: 1,
         done: false,
@@ -408,6 +708,8 @@ export default function MealPlan() {
           onSetMeal={setMeal}
           onClearMeal={clearMeal}
           savedRecipes={savedRecipes}
+          customRecipes={customRecipes}
+          onSaveCustomRecipe={recipe => setCustomRecipes(prev => [recipe, ...prev])}
           today={today}
         />
       ))}
