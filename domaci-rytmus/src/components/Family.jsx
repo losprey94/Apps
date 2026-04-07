@@ -40,8 +40,15 @@ function SyncPanel() {
 
   const handleCreate = async () => {
     setCreating(true)
-    await createHousehold()
-    setCreating(false)
+    setJoinError('')
+    try {
+      const code = await createHousehold()
+      if (!code) setJoinError('Firebase nie je správne nastavený. Skontroluj GitHub secrets a re-run deploy.')
+    } catch (err) {
+      setJoinError('Chyba: Firestore databáza nie je vytvorená. Dokonči krok 4 v návode (Create database).')
+    } finally {
+      setCreating(false)
+    }
   }
 
   const handleJoin = async (e) => {
@@ -49,10 +56,15 @@ function SyncPanel() {
     if (!joinCode.trim()) return
     setJoining(true)
     setJoinError('')
-    const ok = await joinHousehold(joinCode)
-    if (!ok) setJoinError('Domácnosť s týmto kódom neexistuje.')
-    setJoining(false)
-    if (ok) setShowJoin(false)
+    try {
+      const ok = await joinHousehold(joinCode)
+      if (!ok) setJoinError('Domácnosť s týmto kódom neexistuje.')
+      else setShowJoin(false)
+    } catch (err) {
+      setJoinError('Chyba pripojenia. Skontroluj či je Firestore databáza vytvorená.')
+    } finally {
+      setJoining(false)
+    }
   }
 
   const copyCode = async () => {
@@ -121,10 +133,15 @@ function SyncPanel() {
             {creating ? <Loader size={16} className="animate-spin" /> : <Link2 size={16} />}
             {creating ? 'Vytvárám…' : 'Vytvoriť novú domácnosť'}
           </button>
-          <button onClick={() => setShowJoin(true)}
+          <button onClick={() => { setShowJoin(true); setJoinError('') }}
             className="w-full flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-sm font-semibold py-3 rounded-xl transition-colors active:scale-95">
             <Users size={16} /> Pripojiť sa k domácnosti
           </button>
+          {joinError && (
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-3 text-xs text-red-600 dark:text-red-400">
+              ⚠️ {joinError}
+            </div>
+          )}
         </div>
       ) : (
         <form onSubmit={handleJoin} className="flex flex-col gap-2">
