@@ -812,9 +812,7 @@ export default function Dashboard({ onNavigate }) {
             </p>
           </div>
           <div className="flex flex-col items-center gap-1 flex-shrink-0">
-            <button onClick={() => setShowCustomizer(true)}
-              className="text-3xl leading-none active:scale-90 transition-transform"
-              title="Prispôsobiť dashboard">{userEmoji}</button>
+            <div className="text-3xl leading-none">{userEmoji}</div>
             {weather && (
               <div className="flex items-center gap-1 bg-white/15 rounded-xl px-2 py-1">
                 <span className="text-base">{weather.emoji}</span>
@@ -840,11 +838,11 @@ export default function Dashboard({ onNavigate }) {
           </button>
         </div>
 
-        {/* Customize hint */}
+        {/* Customizer button */}
         <button onClick={() => setShowCustomizer(true)}
-          className="mt-3 flex items-center gap-1.5 text-[10px] font-medium opacity-60 hover:opacity-90 transition-opacity">
-          <Settings size={11} />
-          Prispôsobiť dashboard
+          className="mt-3 w-full flex items-center justify-center gap-1.5 bg-white/15 hover:bg-white/25 active:bg-white/30 rounded-2xl py-2 text-xs font-semibold transition-colors">
+          <Settings size={13} />
+          Prispôsobiť widgety
         </button>
       </div>
 

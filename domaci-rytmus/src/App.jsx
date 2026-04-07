@@ -434,13 +434,14 @@ function AppInner() {
               )
             })}
 
-            {/* Edit button — small gear in corner */}
+            {/* Edit nav button */}
             <button
               onClick={() => setCustomizerOpen(true)}
-              className="absolute right-1 top-1 w-6 h-6 flex items-center justify-center rounded-lg text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 transition-colors"
+              className="absolute right-1 bottom-4 flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               title="Prispôsobiť lištu"
             >
-              <Settings2 size={12} />
+              <Settings2 size={15} />
+              <span className="text-[8px] font-semibold leading-none">Upraviť</span>
             </button>
           </div>
         </nav>

@@ -2,21 +2,45 @@ import { useState, useEffect } from 'react'
 import {
   User, Palette, Bell, BellOff, Database, Trash2,
   Download, Upload, Info, ChevronRight, Moon, Sun,
-  Check, AlertTriangle, RefreshCw, Leaf, CheckSquare, ShoppingCart
+  Check, AlertTriangle, RefreshCw, Leaf, CheckSquare, ShoppingCart,
+  ChevronUp, ChevronDown, Plus, Minus,
+  Home, Grid3x3, UtensilsCrossed, Wallet, PawPrint, Zap, Users,
+  Navigation2, LayoutDashboard,
 } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useSyncedStorage } from '../context/SyncContext'
 import { useAuth } from '../context/AuthContext'
 
 const AVATAR_EMOJIS = ['😊','🧑','👨','👩','🧔','👴','👵','🧒','🧑‍💻','🧑‍🍳','🧑‍🌾','🧑‍🔧']
 
-const COLOR_THEMES = [
-  { id: 'indigo',  label: 'Indigová',  primary: 'bg-indigo-600',  preview: '#4f46e5' },
-  { id: 'violet',  label: 'Fialová',   primary: 'bg-violet-600',  preview: '#7c3aed' },
-  { id: 'rose',    label: 'Ružová',    primary: 'bg-rose-500',    preview: '#f43f5e' },
-  { id: 'emerald', label: 'Zelená',    primary: 'bg-emerald-600', preview: '#059669' },
-  { id: 'amber',   label: 'Jantárová', primary: 'bg-amber-500',   preview: '#f59e0b' },
-  { id: 'cyan',    label: 'Tyrkysová', primary: 'bg-cyan-500',    preview: '#06b6d4' },
+// Nav config (same as App.jsx)
+const ALL_NAV_OPTIONS = [
+  { id: 'home',     label: 'Domov',      icon: Home,            color: 'text-indigo-600 dark:text-indigo-400'   },
+  { id: 'tasks',    label: 'Úlohy',      icon: CheckSquare,     color: 'text-indigo-600 dark:text-indigo-400'   },
+  { id: 'plants',   label: 'Rastliny',   icon: Leaf,            color: 'text-cyan-600 dark:text-cyan-400'       },
+  { id: 'shopping', label: 'Nákup',      icon: ShoppingCart,    color: 'text-violet-600 dark:text-violet-400'   },
+  { id: 'mealplan', label: 'Jedálniček', icon: UtensilsCrossed, color: 'text-orange-600 dark:text-orange-400'   },
+  { id: 'budget',   label: 'Rozpočet',   icon: Wallet,          color: 'text-emerald-600 dark:text-emerald-400' },
+  { id: 'pets',     label: 'Zvieratá',   icon: PawPrint,        color: 'text-rose-600 dark:text-rose-400'       },
+  { id: 'energy',   label: 'Energie',    icon: Zap,             color: 'text-amber-600 dark:text-amber-400'     },
+  { id: 'contacts', label: 'Kontakty',   icon: Users,           color: 'text-sky-600 dark:text-sky-400'         },
+  { id: 'more',     label: 'Viac',       icon: Grid3x3,         color: 'text-slate-600 dark:text-slate-300'     },
 ]
+const DEFAULT_NAV = ['home', 'tasks', 'plants', 'shopping', 'more']
+const MAX_NAV = 5
+
+// Dashboard widgets config (same as Dashboard.jsx)
+const WIDGET_DEFS = [
+  { id: 'weather',      label: 'Počasie',           emoji: '🌤️' },
+  { id: 'smart',        label: 'Denný tip',          emoji: '💡' },
+  { id: 'mealtoday',    label: 'Dnešný jedálniček',  emoji: '🍽️' },
+  { id: 'budget',       label: 'Rozpočet',           emoji: '💶' },
+  { id: 'budgetchart',  label: 'Graf výdavkov',      emoji: '📊' },
+  { id: 'loyaltycards', label: 'Rýchle karty',       emoji: '💳' },
+  { id: 'quicknav',     label: 'Rýchla navigácia',   emoji: '🗂️' },
+  { id: 'quote',        label: 'Citát',              emoji: '💬' },
+]
+const DEFAULT_WIDGETS = ['weather','smart','mealtoday','budget','budgetchart','loyaltycards','quicknav','quote']
 
 const MOTIVATIONAL_QUOTES = [
   'Malé kroky každý deň vedú k veľkým zmenám.',
@@ -71,15 +95,44 @@ export default function Settings() {
   const [userName, setUserName] = useLocalStorage('user-name', '')
   const [userEmoji, setUserEmoji] = useLocalStorage('user-emoji', '😊')
   const [darkMode, setDarkMode] = useLocalStorage('dark-mode', false)
-  const [colorTheme, setColorTheme] = useLocalStorage('color-theme', 'indigo')
   const [notifEnabled, setNotifEnabled] = useLocalStorage('notifications-enabled', false)
   const [reminderTime, setReminderTime] = useLocalStorage('reminder-time', '08:00')
   const [defaultTaskInterval, setDefaultTaskInterval] = useLocalStorage('default-task-interval', 30)
   const [defaultPlantInterval, setDefaultPlantInterval] = useLocalStorage('default-plant-interval', 7)
   const [showQuotes, setShowQuotes] = useLocalStorage('show-quotes', true)
+  const [navIds, setNavIds] = useSyncedStorage('nav-tabs', DEFAULT_NAV)
+  const [dashWidgets, setDashWidgets] = useLocalStorage('dashboard-widgets', DEFAULT_WIDGETS)
   const [tasks] = useLocalStorage('tasks', [])
   const [plants] = useLocalStorage('plants', [])
   const [shopping] = useLocalStorage('shopping', [])
+
+  // Nav helpers
+  const safeNavIds = Array.isArray(navIds) && navIds.length > 0 ? navIds : DEFAULT_NAV
+  const moveNav = (id, dir) => {
+    const idx = safeNavIds.indexOf(id)
+    if (dir === 'up' && idx === 0) return
+    if (dir === 'down' && idx === safeNavIds.length - 1) return
+    const next = [...safeNavIds]
+    const swap = dir === 'up' ? idx - 1 : idx + 1
+    ;[next[idx], next[swap]] = [next[swap], next[idx]]
+    setNavIds(next)
+  }
+  const removeNav = (id) => setNavIds(safeNavIds.filter(x => x !== id))
+  const addNav    = (id) => { if (safeNavIds.length < MAX_NAV) setNavIds([...safeNavIds, id]) }
+
+  // Dashboard helpers
+  const safeDash = Array.isArray(dashWidgets) ? dashWidgets.filter(id => WIDGET_DEFS.some(w => w.id === id)) : DEFAULT_WIDGETS
+  const moveDash = (id, dir) => {
+    const idx = safeDash.indexOf(id)
+    if (dir === 'up' && idx === 0) return
+    if (dir === 'down' && idx === safeDash.length - 1) return
+    const next = [...safeDash]
+    const swap = dir === 'up' ? idx - 1 : idx + 1
+    ;[next[idx], next[swap]] = [next[swap], next[idx]]
+    setDashWidgets(next)
+  }
+  const removeDash = (id) => setDashWidgets(safeDash.filter(x => x !== id))
+  const addDash    = (id) => setDashWidgets([...safeDash, id])
 
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState(userName)
@@ -91,21 +144,6 @@ export default function Settings() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
   }, [darkMode])
-
-  useEffect(() => {
-    const colors = {
-      indigo:  { primary: '#4f46e5', bg: '#eef2ff', ring: '#6366f1' },
-      violet:  { primary: '#7c3aed', bg: '#f5f3ff', ring: '#8b5cf6' },
-      rose:    { primary: '#e11d48', bg: '#fff1f2', ring: '#f43f5e' },
-      emerald: { primary: '#059669', bg: '#ecfdf5', ring: '#10b981' },
-      amber:   { primary: '#d97706', bg: '#fffbeb', ring: '#f59e0b' },
-      cyan:    { primary: '#0891b2', bg: '#ecfeff', ring: '#06b6d4' },
-    }
-    const t = colors[colorTheme] || colors.indigo
-    document.documentElement.style.setProperty('--color-primary', t.primary)
-    document.documentElement.style.setProperty('--color-primary-bg', t.bg)
-    document.documentElement.style.setProperty('--color-primary-ring', t.ring)
-  }, [colorTheme])
 
   const notifSupported = 'Notification' in window
   const notifPermission = notifSupported ? Notification.permission : 'denied'
@@ -267,20 +305,6 @@ export default function Settings() {
         <Row label="Tmavý režim" sublabel={darkMode ? 'Zapnutý' : 'Vypnutý'}>
           <Toggle value={darkMode} onChange={setDarkMode} />
         </Row>
-        <Row label="Farebná téma">
-          <div />
-        </Row>
-        <div className="px-4 pb-3 flex gap-2 flex-wrap">
-          {COLOR_THEMES.map(theme => (
-            <button
-              key={theme.id}
-              onClick={() => setColorTheme(theme.id)}
-              title={theme.label}
-              className={`w-8 h-8 rounded-full transition-transform ${colorTheme === theme.id ? 'scale-125 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-slate-800 ring-slate-400' : 'hover:scale-110'}`}
-              style={{ backgroundColor: theme.preview }}
-            />
-          ))}
-        </div>
         <Row label="Motivačné citáty" sublabel="Zobrazovať na dashboarde">
           <Toggle value={showQuotes} onChange={setShowQuotes} />
         </Row>
@@ -316,6 +340,107 @@ export default function Settings() {
           </Row>
         )}
       </Section>
+
+      {/* Nav customizer */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+          <Navigation2 size={16} className="text-slate-500 dark:text-slate-400" />
+          <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">Navigačná lišta</span>
+          <span className="ml-auto text-xs text-slate-400">{safeNavIds.length}/{MAX_NAV}</span>
+        </div>
+        <div className="p-3 flex flex-col gap-1.5">
+          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-0.5">V lište</div>
+          {safeNavIds.map((id, idx) => {
+            const opt = ALL_NAV_OPTIONS.find(o => o.id === id)
+            if (!opt) return null
+            return (
+              <div key={id} className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl px-3 py-2.5">
+                <opt.icon size={16} className={`${opt.color} flex-shrink-0`} />
+                <span className="flex-1 text-sm font-medium text-slate-700 dark:text-slate-300">{opt.label}</span>
+                <button onClick={() => moveNav(id, 'up')} disabled={idx === 0}
+                  className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-20 transition-colors">
+                  <ChevronUp size={14} />
+                </button>
+                <button onClick={() => moveNav(id, 'down')} disabled={idx === safeNavIds.length - 1}
+                  className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-20 transition-colors">
+                  <ChevronDown size={14} />
+                </button>
+                <button onClick={() => removeNav(id)}
+                  className="p-1 text-rose-400 hover:text-rose-600 transition-colors ml-1">
+                  <Minus size={14} />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+        {ALL_NAV_OPTIONS.filter(o => !safeNavIds.includes(o.id)).length > 0 && (
+          <div className="px-3 pb-3 flex flex-col gap-1.5">
+            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-0.5">Dostupné</div>
+            {ALL_NAV_OPTIONS.filter(o => !safeNavIds.includes(o.id)).map(opt => {
+              const full = safeNavIds.length >= MAX_NAV
+              return (
+                <div key={opt.id} className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-600 ${full ? 'opacity-40' : ''}`}>
+                  <opt.icon size={16} className={`${opt.color} flex-shrink-0`} />
+                  <span className="flex-1 text-sm font-medium text-slate-500 dark:text-slate-400">{opt.label}</span>
+                  <button onClick={() => addNav(opt.id)} disabled={full}
+                    className="p-1 text-emerald-500 hover:text-emerald-700 disabled:pointer-events-none transition-colors">
+                    <Plus size={14} />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Dashboard customizer */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+          <LayoutDashboard size={16} className="text-slate-500 dark:text-slate-400" />
+          <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">Dashboard</span>
+          <span className="ml-auto text-xs text-slate-400">{safeDash.length}/{WIDGET_DEFS.length} widgetov</span>
+        </div>
+        <div className="p-3 flex flex-col gap-1.5">
+          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-0.5">Zobrazené</div>
+          {safeDash.map((id, idx) => {
+            const w = WIDGET_DEFS.find(x => x.id === id)
+            if (!w) return null
+            return (
+              <div key={id} className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl px-3 py-2.5">
+                <span className="text-base flex-shrink-0">{w.emoji}</span>
+                <span className="flex-1 text-sm font-medium text-slate-700 dark:text-slate-300">{w.label}</span>
+                <button onClick={() => moveDash(id, 'up')} disabled={idx === 0}
+                  className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-20 transition-colors">
+                  <ChevronUp size={14} />
+                </button>
+                <button onClick={() => moveDash(id, 'down')} disabled={idx === safeDash.length - 1}
+                  className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-20 transition-colors">
+                  <ChevronDown size={14} />
+                </button>
+                <button onClick={() => removeDash(id)}
+                  className="p-1 text-rose-400 hover:text-rose-600 transition-colors ml-1">
+                  <Minus size={14} />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+        {WIDGET_DEFS.filter(w => !safeDash.includes(w.id)).length > 0 && (
+          <div className="px-3 pb-3 flex flex-col gap-1.5">
+            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-0.5">Dostupné</div>
+            {WIDGET_DEFS.filter(w => !safeDash.includes(w.id)).map(w => (
+              <div key={w.id} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-600">
+                <span className="text-base flex-shrink-0">{w.emoji}</span>
+                <span className="flex-1 text-sm font-medium text-slate-500 dark:text-slate-400">{w.label}</span>
+                <button onClick={() => addDash(w.id)}
+                  className="p-1 text-emerald-500 hover:text-emerald-700 transition-colors">
+                  <Plus size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Defaults */}
       <Section title="Predvolené hodnoty" icon={RefreshCw}>
