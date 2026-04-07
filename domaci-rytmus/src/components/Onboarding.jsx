@@ -12,10 +12,11 @@ const STEPS = [
   { id: 'done' },
 ]
 
-export default function Onboarding({ onFinish }) {
+export default function Onboarding({ onFinish, googleUser }) {
   const haptic = useHaptic()
   const [step, setStep] = useState(0)
-  const [name, setName] = useLocalStorage('user-name', '')
+  // Pre-fill name from Google account if available
+  const [name, setName] = useLocalStorage('user-name', googleUser?.displayName?.split(' ')[0] || '')
   const [emoji, setEmoji] = useLocalStorage('user-emoji', '😊')
   const [tasks, setTasks] = useLocalStorage('tasks', [])
   const [taskName, setTaskName] = useState('')

@@ -1,7 +1,9 @@
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
+import { getAuth } from 'firebase/auth'
 
-let db = null
+let db   = null
+let auth = null
 
 if (import.meta.env.VITE_FIREBASE_PROJECT_ID) {
   const app = initializeApp({
@@ -12,7 +14,8 @@ if (import.meta.env.VITE_FIREBASE_PROJECT_ID) {
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
     appId:       import.meta.env.VITE_FIREBASE_APP_ID,
   })
-  db = getFirestore(app)
+  db   = getFirestore(app)
+  auth = getAuth(app)
 }
 
-export { db }
+export { db, auth }

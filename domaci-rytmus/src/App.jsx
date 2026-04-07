@@ -14,8 +14,10 @@ import Family from './components/Family'
 import Budget from './components/Budget'
 import More from './components/More'
 import InstallPrompt from './components/InstallPrompt'
+import LoginScreen from './components/LoginScreen'
 import { ThemeProvider, THEMES } from './context/ThemeContext'
 import { SyncProvider, useSync } from './context/SyncContext'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { useTaskNotifications } from './hooks/useTaskNotifications'
 
@@ -82,6 +84,7 @@ function SyncIndicator() {
 }
 
 function AppInner() {
+  const { user, loading: authLoading, isAuthEnabled } = useAuth()
   const [activeTab, setActiveTab] = useLocalStorage('active-tab', 'home')
   const [subPage, setSubPage] = useState(null)
   const [onboardingDone, setOnboardingDone] = useLocalStorage('onboarding-done', false)
@@ -145,8 +148,26 @@ function AppInner() {
     }
   }
 
+  // Auth loading spinner
+  if (authLoading) {
+    return (
+      <div className="fixed inset-0 bg-slate-900 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
+            style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>🏠</div>
+          <Loader size={24} className="text-indigo-400 animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
+  // Show login screen if auth is enabled and user is not signed in
+  if (isAuthEnabled && !user) {
+    return <LoginScreen />
+  }
+
   if (!onboardingDone) {
-    return <Onboarding onFinish={() => setOnboardingDone(true)} />
+    return <Onboarding onFinish={() => setOnboardingDone(true)} googleUser={user} />
   }
 
   return (
@@ -222,9 +243,11 @@ function AppInner() {
 export default function App() {
   return (
     <ThemeProvider>
-      <SyncProvider>
-        <AppInner />
-      </SyncProvider>
+      <AuthProvider>
+        <SyncProvider>
+          <AppInner />
+        </SyncProvider>
+      </AuthProvider>
     </ThemeProvider>
   )
 }
