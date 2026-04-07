@@ -2,13 +2,14 @@ import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useSyncedStorage } from '../context/SyncContext'
 
 const SECTIONS = [
-  { id: 'budget',    label: 'Rozpočet',  emoji: '💶', desc: 'Výdavky a úspory',              color: 'emerald' },
-  { id: 'pets',      label: 'Zvieratá',  emoji: '🐾', desc: 'Starostlivosť o miláčikov',    color: 'amber'  },
-  { id: 'energy',    label: 'Energie',   emoji: '⚡', desc: 'Odpočty meračov',               color: 'orange' },
-  { id: 'contacts',  label: 'Kontakty',  emoji: '📞', desc: 'Dôležité telefóny',             color: 'indigo' },
-  { id: 'history',   label: 'História',  emoji: '📋', desc: 'Prehľad aktivít',               color: 'slate'  },
-  { id: 'family',    label: 'Rodina',    emoji: '👨‍👩‍👧', desc: 'Členovia a zdieľanie',        color: 'rose'   },
-  { id: 'settings',  label: 'Nastavenia',emoji: '⚙️', desc: 'Profil, téma, dáta',           color: 'slate'  },
+  { id: 'mealplan',  label: 'Jedálniček', emoji: '🍽️', desc: 'Týždenný plán jedál',             color: 'orange' },
+  { id: 'budget',    label: 'Rozpočet',   emoji: '💶', desc: 'Výdavky a úspory',                color: 'emerald' },
+  { id: 'pets',      label: 'Zvieratá',   emoji: '🐾', desc: 'Starostlivosť o miláčikov',       color: 'amber'  },
+  { id: 'energy',    label: 'Energie',    emoji: '⚡', desc: 'Odpočty meračov',                  color: 'orange' },
+  { id: 'contacts',  label: 'Kontakty',   emoji: '📞', desc: 'Dôležité telefóny',               color: 'indigo' },
+  { id: 'history',   label: 'História',   emoji: '📋', desc: 'Prehľad aktivít',                 color: 'slate'  },
+  { id: 'family',    label: 'Rodina',     emoji: '👨‍👩‍👧', desc: 'Členovia a zdieľanie',          color: 'rose'   },
+  { id: 'settings',  label: 'Nastavenia', emoji: '⚙️', desc: 'Profil, téma, dáta',             color: 'slate'  },
 ]
 
 const COLORS = {
@@ -45,7 +46,11 @@ export default function More({ onNavigate }) {
   const budgetSpent   = periodExp.reduce((s, e) => s + e.amount, 0)
   const budgetPct     = Math.round((budgetSpent / budgetConfig.totalBudget) * 100)
 
+  const [mealPlan] = useSyncedStorage('meal-plan', {})
+  const todayMeals = Object.values(mealPlan[new Date().toISOString().split('T')[0]] || {}).flatMap(g => Object.values(g)).filter(Boolean).length
+
   const badges = {
+    mealplan: todayMeals,
     budget:   budgetExpenses.length,
     pets:     pets.length,
     energy:   readingsCount,
@@ -56,6 +61,7 @@ export default function More({ onNavigate }) {
   }
 
   const hints = {
+    mealplan: todayMeals > 0 ? `Dnes ${todayMeals} jedál naplánovaných` : 'Naplánuj jedálniček',
     budget:   budgetExpenses.length > 0 ? `${budgetPct}% z rozpočtu minuto` : 'Nastav mesačný rozpočet',
     pets:     pets.length > 0 ? `${pets.length} miláčikov` : 'Pridaj miláčika',
     energy:   readingsCount > 0 ? `${readingsCount} záznamov` : 'Žiadne záznamy',

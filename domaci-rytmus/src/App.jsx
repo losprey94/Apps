@@ -12,6 +12,7 @@ import Contacts from './components/Contacts'
 import History from './components/History'
 import Family from './components/Family'
 import Budget from './components/Budget'
+import MealPlan from './components/MealPlan'
 import More from './components/More'
 import InstallPrompt from './components/InstallPrompt'
 import LoginScreen from './components/LoginScreen'
@@ -41,6 +42,7 @@ const SUB_PAGES = {
   history:   { label: 'História',   component: History   },
   family:    { label: 'Rodina',     component: Family    },
   budget:    { label: 'Rozpočet',   component: Budget    },
+  mealplan:  { label: 'Jedálniček', component: MealPlan  },
   settings:  { label: 'Nastavenia', component: Settings  },
 }
 
