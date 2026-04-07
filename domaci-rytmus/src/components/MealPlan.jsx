@@ -27,11 +27,19 @@ function getWeekStart(offset = 0) {
   return d
 }
 
+// Use local timezone to avoid UTC date shift (e.g. at 23:00 CET toISOString gives tomorrow UTC)
+function toLocalDateKey(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 function getWeekDays(weekStart) {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart)
     d.setDate(d.getDate() + i)
-    return d.toISOString().split('T')[0]
+    return toLocalDateKey(d)
   })
 }
 
@@ -40,7 +48,7 @@ function fmtDayHeader(dateStr, idx) {
   return `${SK_DAYS[idx]}, ${d.getDate()}. ${SK_MONTHS[d.getMonth()]}`
 }
 
-function todayStr() { return new Date().toISOString().split('T')[0] }
+function todayStr() { return toLocalDateKey(new Date()) }
 
 function parseIngredients(meal) {
   const out = []
