@@ -24,6 +24,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import { I18nProvider, useI18n } from './context/I18nContext'
 import { SyncProvider, useSync, useSyncedStorage } from './context/SyncContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { NotifProvider, useNotif } from './context/NotifContext'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { useTaskNotifications } from './hooks/useTaskNotifications'
 
@@ -237,6 +238,37 @@ function NavCustomizerModal({ navIds, onChange, onClose }) {
   )
 }
 
+function FamilyToastsOverlay() {
+  const { toasts, dismissToast } = useNotif()
+  if (!toasts.length) return null
+  return (
+    <div className="fixed top-16 inset-x-0 z-50 flex flex-col gap-2 px-4 pointer-events-none" style={{ maxWidth: '28rem', margin: '0 auto' }}>
+      {toasts.map(toast => (
+        <div
+          key={toast.toastId}
+          className="flex items-center gap-3 bg-white dark:bg-slate-800 rounded-2xl shadow-xl px-4 py-3 pointer-events-auto border border-slate-100 dark:border-slate-700"
+        >
+          <span className="text-xl leading-none flex-shrink-0">{toast.icon}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
+              {toast.action}: {toast.itemName}
+            </p>
+            {toast.byName && (
+              <p className="text-xs text-slate-400">{toast.byName}</p>
+            )}
+          </div>
+          <button
+            onClick={() => dismissToast(toast.toastId)}
+            className="w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors flex-shrink-0"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function SyncIndicator() {
   const { syncStatus, householdCode } = useSync()
   if (!householdCode) return null
@@ -393,6 +425,9 @@ function AppInner() {
           {renderContent()}
         </main>
 
+        {/* Family Notification Toasts */}
+        <FamilyToastsOverlay />
+
         {/* PWA Install Banner */}
         <div className="fixed bottom-[72px] left-0 right-0 z-20 pointer-events-none">
           <div className="w-full max-w-lg mx-auto pointer-events-auto">
@@ -446,7 +481,13 @@ function AppInner() {
 
 function SyncBridge({ children }) {
   const { user } = useAuth()
-  return <SyncProvider uid={user?.uid || null}>{children}</SyncProvider>
+  return (
+    <SyncProvider uid={user?.uid || null}>
+      <NotifProvider uid={user?.uid} displayName={user?.displayName || user?.email?.split('@')[0]}>
+        {children}
+      </NotifProvider>
+    </SyncProvider>
+  )
 }
 
 export default function App() {

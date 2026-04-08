@@ -4,6 +4,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useSyncedStorage } from '../context/SyncContext'
 import LoyaltyCards from './LoyaltyCards'
 import { useHaptic } from '../hooks/useHaptic'
+import { useNotif } from '../context/NotifContext'
 
 const CATEGORIES = [
   { id: 'zelenina', label: 'Zelenina & Ovocie', emoji: '🥦' },
@@ -34,10 +35,12 @@ function ShoppingList() {
   const [expandedCategories, setExpandedCategories] = useLocalStorage('shopping-expanded', {})
   const [showDone, setShowDone] = useLocalStorage('shopping-show-done', true)
   const haptic = useHaptic()
+  const { pushNotif } = useNotif()
 
   const toggleItem = (id) => {
     const item = items.find(i => i.id === id)
     haptic[item?.done ? 'tap' : 'success']()
+    if (!item?.done) pushNotif('✅', 'Kúpené', item?.name || '')
     setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
   }
   const deleteItem = (id) => { haptic.tap(); setItems(items.filter(i => i.id !== id)) }
@@ -53,6 +56,7 @@ function ShoppingList() {
       quantity: parseInt(qty) || 1,
       done: false,
     }])
+    pushNotif('🛒', 'Pridané na nákup', name.trim())
     setInput('')
     setQuantity('1')
   }

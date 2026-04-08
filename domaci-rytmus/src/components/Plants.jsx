@@ -4,6 +4,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useSyncedStorage } from '../context/SyncContext'
 import { useHistory } from '../hooks/useHistory'
 import { useHaptic } from '../hooks/useHaptic'
+import { useNotif } from '../context/NotifContext'
 
 const DEFAULT_PLANTS = [
   { id: 1, name: 'Monstera', emoji: '🌿', intervalDays: 7, lastWatered: null, location: 'Obývačka' },
@@ -42,12 +43,16 @@ export default function Plants() {
   const [location, setLocation] = useState('')
   const [justWatered, setJustWatered] = useState(null)
   const { addEvent } = useHistory()
+  const { pushNotif } = useNotif()
   const haptic = useHaptic()
 
   const water = (id) => {
     const plant = plants.find(p => p.id === id)
     setPlants(plants.map(p => p.id === id ? { ...p, lastWatered: new Date().toISOString() } : p))
-    if (plant) addEvent('plants', plant.emoji, 'Zaliata', plant.name)
+    if (plant) {
+      addEvent('plants', plant.emoji, 'Zaliata', plant.name)
+      pushNotif(plant.emoji, 'Zaliata', plant.name)
+    }
     haptic.success()
     setJustWatered(id)
     setTimeout(() => setJustWatered(null), 1200)
