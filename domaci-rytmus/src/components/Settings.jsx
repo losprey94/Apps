@@ -214,6 +214,7 @@ export default function Settings() {
       localStorage.removeItem(k)
       if (isConnected) updateHousehold(k, [])
     })
+    if (type === 'all' && isConnected) updateHousehold('notifications', [])
     setConfirmClear(null)
     window.location.reload()
   }

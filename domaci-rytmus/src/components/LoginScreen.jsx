@@ -40,7 +40,7 @@ export default function LoginScreen() {
       {/* Center content */}
       <div className="flex flex-col items-center text-center gap-8 w-full max-w-sm">
         {/* Logo */}
-        <div className="animate-fade-in" style={{ animationDelay: '0ms' }}>
+        <div className="animate-fade-in" style={{ animationDelay: '0ms', animationFillMode: 'both' }}>
           <div className="w-24 h-24 rounded-3xl flex items-center justify-center text-5xl shadow-2xl mx-auto mb-6"
             style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
             🏠

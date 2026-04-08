@@ -25,6 +25,7 @@ function getDaysSince(d) {
   return Math.floor((Date.now() - new Date(d).getTime()) / 86400000)
 }
 function getTaskStatus(t) {
+  if (t.repeating === false) return 'pending'   // one-time: always pending until deleted
   const d = getDaysSince(t.lastDone)
   if (d === null) return 'pending'
   const r = t.intervalDays - d

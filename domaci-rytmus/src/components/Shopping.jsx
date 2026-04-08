@@ -28,6 +28,7 @@ const SUGGESTIONS = {
 
 function ShoppingList() {
   const [items, setItems] = useSyncedStorage('shopping', [])
+  const [members] = useSyncedStorage('family-members', [])
   const [input, setInput] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('ostatne')
   const [quantity, setQuantity] = useState('1')
@@ -36,11 +37,12 @@ function ShoppingList() {
   const [showDone, setShowDone] = useLocalStorage('shopping-show-done', true)
   const haptic = useHaptic()
   const { pushNotif } = useNotif()
+  const hasFamily = members.length > 0
 
   const toggleItem = (id) => {
     const item = items.find(i => i.id === id)
     haptic[item?.done ? 'tap' : 'success']()
-    if (!item?.done) pushNotif('shopping', '✅', 'Kúpené', item?.name || '')
+    if (!item?.done && hasFamily) pushNotif('shopping', '✅', 'Kúpené', item?.name || '')
     setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
   }
   const deleteItem = (id) => { haptic.tap(); setItems(items.filter(i => i.id !== id)) }
@@ -56,7 +58,7 @@ function ShoppingList() {
       quantity: parseInt(qty) || 1,
       done: false,
     }])
-    pushNotif('shopping', '🛒', 'Pridané na nákup', name.trim())
+    if (hasFamily) pushNotif('shopping', '🛒', 'Pridané na nákup', name.trim())
     setInput('')
     setQuantity('1')
   }

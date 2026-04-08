@@ -7,9 +7,9 @@ import { useHaptic } from '../hooks/useHaptic'
 import { useNotif } from '../context/NotifContext'
 
 const DEFAULT_TASKS = [
-  { id: 1, name: 'Odvápnenie kávovaru',       intervalDays: 30, lastDone: null, deadline: null },
-  { id: 2, name: 'Čistenie filtra digestora',  intervalDays: 90, lastDone: null, deadline: null },
-  { id: 3, name: 'Umytie okien',               intervalDays: 60, lastDone: null, deadline: null },
+  { id: 1, name: 'Odvápnenie kávovaru',       repeating: true, intervalDays: 30, lastDone: null, deadline: null },
+  { id: 2, name: 'Čistenie filtra digestora',  repeating: true, intervalDays: 90, lastDone: null, deadline: null },
+  { id: 3, name: 'Umytie okien',               repeating: true, intervalDays: 60, lastDone: null, deadline: null },
 ]
 
 function getDaysSince(dateStr) {
