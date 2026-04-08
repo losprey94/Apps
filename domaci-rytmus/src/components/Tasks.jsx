@@ -17,6 +17,7 @@ function getDaysSince(dateStr) {
 }
 
 function getStatus(task) {
+  if (task.repeating === false) return 'pending'   // one-time tasks are always pending until deleted
   const days = getDaysSince(task.lastDone)
   if (days === null) return 'pending'
   const remaining = task.intervalDays - days
@@ -155,6 +156,7 @@ export default function Tasks() {
 
   const [showForm, setShowForm]     = useState(false)
   const [name, setName]             = useState('')
+  const [repeating, setRepeating]   = useState(true)
   const [interval, setInterval]     = useState('30')
   const [deadline, setDeadline]     = useState('')
   const [assignedTo, setAssignedTo] = useState('')
@@ -164,11 +166,24 @@ export default function Tasks() {
 
   const markDone = (id) => {
     const task = tasks.find(t => t.id === id)
-    setTasks(tasks.map(t => t.id === id ? { ...t, lastDone: new Date().toISOString() } : t))
-    if (task) addEvent('tasks', '✅', 'Hotovo', task.name)
-    haptic.success()
-    setJustDone(id)
-    setTimeout(() => setJustDone(null), 1200)
+    if (!task) return
+    if (task.repeating === false) {
+      // One-time task — flash then delete
+      setJustDone(id)
+      addEvent('tasks', '✅', 'Hotovo', task.name)
+      haptic.success()
+      setTimeout(() => {
+        setTasks(prev => prev.filter(t => t.id !== id))
+        setJustDone(null)
+      }, 800)
+    } else {
+      // Repeating task — mark done, keep in list
+      setTasks(tasks.map(t => t.id === id ? { ...t, lastDone: new Date().toISOString() } : t))
+      addEvent('tasks', '✅', 'Hotovo', task.name)
+      haptic.success()
+      setJustDone(id)
+      setTimeout(() => setJustDone(null), 1200)
+    }
   }
 
   const deleteTask = (id) => { haptic.tap(); setTasks(tasks.filter(t => t.id !== id)) }
@@ -179,13 +194,14 @@ export default function Tasks() {
     setTasks([...tasks, {
       id: Date.now(),
       name: name.trim(),
-      intervalDays: parseInt(interval) || 30,
+      repeating,
+      intervalDays: repeating ? (parseInt(interval) || 30) : null,
       lastDone: null,
       deadline: deadline || null,
       assignedTo: assignedTo || null,
     }])
     haptic.done()
-    setName(''); setInterval('30'); setDeadline(''); setAssignedTo('')
+    setName(''); setRepeating(true); setInterval('30'); setDeadline(''); setAssignedTo('')
     setShowForm(false)
   }
 
@@ -293,15 +309,19 @@ export default function Tasks() {
                             {dlInfo.label}
                           </span>
                         )}
-                        {days !== null
-                          ? <span className="text-xs text-slate-400">pred {days}d</span>
-                          : <span className="text-xs text-slate-400">Ešte nesplnené</span>
+                        {task.repeating === false
+                          ? <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-medium">jednorazová</span>
+                          : days !== null
+                            ? <span className="text-xs text-slate-400">pred {days}d</span>
+                            : <span className="text-xs text-slate-400">Ešte nesplnená</span>
                         }
                         {assignee && (
                           <span className="text-xs text-slate-500 dark:text-slate-400">{assignee.emoji} {assignee.name}</span>
                         )}
                       </div>
-                      <div className="mt-0.5 text-xs text-slate-400">Každých {task.intervalDays} {task.intervalDays < 5 ? 'dni' : 'dní'}</div>
+                      {task.repeating !== false && (
+                        <div className="mt-0.5 text-xs text-slate-400">Každých {task.intervalDays} {task.intervalDays < 5 ? 'dni' : 'dní'}</div>
+                      )}
                     </div>
                   </div>
                   <button onClick={() => deleteTask(task.id)} className="text-slate-300 hover:text-red-400 transition-colors p-1">
@@ -309,7 +329,7 @@ export default function Tasks() {
                   </button>
                 </div>
 
-                {days !== null && (
+                {task.repeating !== false && days !== null && (
                   <div className="mt-3">
                     <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                       <div
@@ -366,30 +386,47 @@ export default function Tasks() {
                 className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
 
-              {/* Interval */}
-              <div>
-                <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 block">Opakovanie</label>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">Každých</span>
-                  <input
-                    type="number" min="1" max="365" value={interval}
-                    onChange={e => setInterval(e.target.value)}
-                    className="w-20 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                  />
-                  <span className="text-sm text-slate-600 dark:text-slate-400">dní</span>
+              {/* Repeating toggle */}
+              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-700/50 rounded-xl px-3 py-3">
+                <div>
+                  <div className="text-sm font-medium text-slate-700 dark:text-slate-200">Opakuje sa</div>
+                  <div className="text-xs text-slate-400 mt-0.5">{repeating ? 'Pravidelná údržba s intervalom' : 'Splní sa raz a zmizne'}</div>
                 </div>
-                <div className="flex gap-1.5 mt-2 flex-wrap">
-                  {[[1,'1d'],[7,'7d'],[14,'14d'],[30,'30d'],[90,'90d']].map(([v,l]) => (
-                    <button key={v} type="button" onClick={() => setInterval(String(v))}
-                      className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors ${
-                        interval === String(v)
-                          ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-300'
-                          : 'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-600'
-                      }`}
-                    >{l}</button>
-                  ))}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setRepeating(!repeating)}
+                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${repeating ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-600'}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${repeating ? 'translate-x-5' : ''}`} />
+                </button>
               </div>
+
+              {/* Interval — only when repeating */}
+              {repeating && (
+                <div>
+                  <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 block">Interval opakovania</label>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">Každých</span>
+                    <input
+                      type="number" min="1" max="365" value={interval}
+                      onChange={e => setInterval(e.target.value)}
+                      className="w-20 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    />
+                    <span className="text-sm text-slate-600 dark:text-slate-400">dní</span>
+                  </div>
+                  <div className="flex gap-1.5 mt-2 flex-wrap">
+                    {[[1,'1d'],[7,'7d'],[14,'14d'],[30,'30d'],[90,'90d']].map(([v,l]) => (
+                      <button key={v} type="button" onClick={() => setInterval(String(v))}
+                        className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors ${
+                          interval === String(v)
+                            ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-300'
+                            : 'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-600'
+                        }`}
+                      >{l}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Deadline */}
               <div>
