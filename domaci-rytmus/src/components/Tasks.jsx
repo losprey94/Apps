@@ -394,30 +394,38 @@ export default function Tasks() {
                 className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
 
-              {/* Repeating checkbox */}
-              <button
-                type="button"
-                onClick={() => setRepeating(!repeating)}
-                className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 transition-colors text-left w-full ${
-                  repeating
-                    ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
-                    : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50'
-                }`}
-              >
-                <span className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                  repeating ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 dark:border-slate-500'
-                }`}>
-                  {repeating && <CheckCircle2 size={13} className="text-white" strokeWidth={3} />}
-                </span>
-                <span>
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200 block">
-                    {repeating ? 'Opakujúca úloha' : 'Jednorázová úloha'}
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    {repeating ? 'Bude sa opakovať podľa intervalu' : 'Splní sa raz a zmizne zo zoznamu'}
-                  </span>
-                </span>
-              </button>
+              {/* Task type selector */}
+              <div>
+                <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 block">Typ úlohy</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRepeating(false)}
+                    className={`flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border-2 transition-colors ${
+                      !repeating
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/25 text-indigo-700 dark:text-indigo-300'
+                        : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    <CheckCircle2 size={20} strokeWidth={1.8} />
+                    <span className="text-sm font-semibold leading-tight">Jednorázová</span>
+                    <span className="text-[11px] leading-tight text-center opacity-70">Splní sa raz a zmizne</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRepeating(true)}
+                    className={`flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border-2 transition-colors ${
+                      repeating
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/25 text-indigo-700 dark:text-indigo-300'
+                        : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    <Clock size={20} strokeWidth={1.8} />
+                    <span className="text-sm font-semibold leading-tight">Opakujúca</span>
+                    <span className="text-[11px] leading-tight text-center opacity-70">Vracia sa podľa intervalu</span>
+                  </button>
+                </div>
+              </div>
 
               {/* Interval — only when repeating */}
               {repeating && (
