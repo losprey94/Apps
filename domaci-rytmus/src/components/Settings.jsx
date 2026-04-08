@@ -102,6 +102,9 @@ export default function Settings() {
   const [darkMode, setDarkMode] = useLocalStorage('dark-mode', false)
   const [notifEnabled, setNotifEnabled] = useLocalStorage('notifications-enabled', false)
   const [reminderTime, setReminderTime] = useLocalStorage('reminder-time', '08:00')
+  const [notifTasks,    setNotifTasks]    = useLocalStorage('notif-family-tasks',    true)
+  const [notifShopping, setNotifShopping] = useLocalStorage('notif-family-shopping', true)
+  const [notifPlants,   setNotifPlants]   = useLocalStorage('notif-family-plants',   true)
   const [defaultTaskInterval, setDefaultTaskInterval] = useLocalStorage('default-task-interval', 30)
   const [defaultPlantInterval, setDefaultPlantInterval] = useLocalStorage('default-plant-interval', 7)
   const [showQuotes, setShowQuotes] = useLocalStorage('show-quotes', true)
@@ -371,14 +374,43 @@ export default function Settings() {
           )}
         </Row>
         {notifEnabled && notifPermission === 'granted' && (
-          <Row label={t('settings.reminder')} sublabel={t('settings.reminderHint')}>
-            <input
-              type="time"
-              value={reminderTime}
-              onChange={e => setReminderTime(e.target.value)}
-              className="border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-lg px-2 py-1 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            />
-          </Row>
+          <>
+            <Row label={t('settings.reminder')} sublabel={t('settings.reminderHint')}>
+              <input
+                type="time"
+                value={reminderTime}
+                onChange={e => setReminderTime(e.target.value)}
+                className="border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-lg px-2 py-1 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+            </Row>
+            {/* Family notification categories */}
+            <div className="px-4 pt-3 pb-1">
+              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                Rodinné notifikácie
+              </div>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">
+                Upozorni ma, keď niekto z rodiny zmení…
+              </p>
+              <div className="flex flex-col gap-1">
+                {[
+                  { key: 'tasks',    icon: '📋', label: 'Úlohy',    sub: 'pridanie, splnenie',   val: notifTasks,    set: setNotifTasks    },
+                  { key: 'shopping', icon: '🛒', label: 'Nákup',    sub: 'pridanie, kúpenie',    val: notifShopping, set: setNotifShopping },
+                  { key: 'plants',   icon: '🌿', label: 'Rastliny', sub: 'zalievanie',           val: notifPlants,   set: setNotifPlants   },
+                ].map(({ icon, label, sub, val, set }) => (
+                  <div key={label} className="flex items-center justify-between py-2.5 border-b border-slate-100 dark:border-slate-700 last:border-0">
+                    <div className="flex items-center gap-3">
+                      <span className="text-base leading-none">{icon}</span>
+                      <div>
+                        <div className="text-sm font-medium text-slate-700 dark:text-slate-200">{label}</div>
+                        <div className="text-xs text-slate-400">{sub}</div>
+                      </div>
+                    </div>
+                    <Toggle value={val} onChange={() => set(!val)} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
         )}
       </Section>
 

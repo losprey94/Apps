@@ -51,7 +51,7 @@ export default function Plants() {
     setPlants(plants.map(p => p.id === id ? { ...p, lastWatered: new Date().toISOString() } : p))
     if (plant) {
       addEvent('plants', plant.emoji, 'Zaliata', plant.name)
-      pushNotif(plant.emoji, 'Zaliata', plant.name)
+      pushNotif('plants', plant.emoji, 'Zaliata', plant.name)
     }
     haptic.success()
     setJustWatered(id)

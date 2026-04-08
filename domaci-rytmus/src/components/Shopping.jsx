@@ -40,7 +40,7 @@ function ShoppingList() {
   const toggleItem = (id) => {
     const item = items.find(i => i.id === id)
     haptic[item?.done ? 'tap' : 'success']()
-    if (!item?.done) pushNotif('✅', 'Kúpené', item?.name || '')
+    if (!item?.done) pushNotif('shopping', '✅', 'Kúpené', item?.name || '')
     setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
   }
   const deleteItem = (id) => { haptic.tap(); setItems(items.filter(i => i.id !== id)) }
@@ -56,7 +56,7 @@ function ShoppingList() {
       quantity: parseInt(qty) || 1,
       done: false,
     }])
-    pushNotif('🛒', 'Pridané na nákup', name.trim())
+    pushNotif('shopping', '🛒', 'Pridané na nákup', name.trim())
     setInput('')
     setQuantity('1')
   }

@@ -173,7 +173,7 @@ export default function Tasks() {
       // One-time task — flash then delete
       setJustDone(id)
       addEvent('tasks', '✅', 'Hotovo', task.name)
-      pushNotif('✅', 'Hotovo', task.name)
+      pushNotif('tasks', '✅', 'Hotovo', task.name)
       haptic.success()
       setTimeout(() => {
         setTasks(prev => prev.filter(t => t.id !== id))
@@ -183,7 +183,7 @@ export default function Tasks() {
       // Repeating task — mark done, keep in list
       setTasks(tasks.map(t => t.id === id ? { ...t, lastDone: new Date().toISOString() } : t))
       addEvent('tasks', '✅', 'Hotovo', task.name)
-      pushNotif('✅', 'Hotovo', task.name)
+      pushNotif('tasks', '✅', 'Hotovo', task.name)
       haptic.success()
       setJustDone(id)
       setTimeout(() => setJustDone(null), 1200)
@@ -204,7 +204,7 @@ export default function Tasks() {
       deadline: deadline || null,
       assignedTo: assignedTo || null,
     }])
-    pushNotif('📋', 'Nová úloha', name.trim())
+    pushNotif('tasks', '📋', 'Nová úloha', name.trim())
     haptic.done()
     setName(''); setRepeating(false); setInterval('30'); setDeadline(''); setAssignedTo('')
     setShowForm(false)
