@@ -405,8 +405,12 @@ export default function Tasks() {
                   {repeating && <CheckCircle2 size={13} className="text-white" strokeWidth={3} />}
                 </span>
                 <span>
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200 block">Opakujúca úloha</span>
-                  <span className="text-xs text-slate-400">{repeating ? 'Bude sa opakovať podľa intervalu' : 'Splní sa raz a zmizne'}</span>
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200 block">
+                    {repeating ? 'Opakujúca úloha' : 'Jednorázová úloha'}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    {repeating ? 'Bude sa opakovať podľa intervalu' : 'Splní sa raz a zmizne zo zoznamu'}
+                  </span>
                 </span>
               </button>
 
