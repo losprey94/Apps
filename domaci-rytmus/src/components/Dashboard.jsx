@@ -4,6 +4,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useSyncedStorage } from '../context/SyncContext'
 import { CardViewer } from './LoyaltyCards'
 import { useWeather } from '../hooks/useWeather'
+import { useCurrency } from '../hooks/useCurrency'
 
 // ─── Widget registry ──────────────────────────────────────────────────────────
 const WIDGET_DEFS = [
@@ -50,9 +51,6 @@ function todayISO() { return new Date().toISOString().split('T')[0] }
 function fmtDate() {
   try { return new Date().toLocaleDateString('sk-SK', { weekday: 'long', day: 'numeric', month: 'long' }) }
   catch { return new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }) }
-}
-function fmtEur(n) {
-  return new Intl.NumberFormat('sk-SK', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
 }
 function toLocalDateKey(date = new Date()) {
   const y = date.getFullYear()
@@ -131,6 +129,7 @@ function getPeriod() {
 
 // ─── Smart context card ───────────────────────────────────────────────────────
 function SmartCard({ period, urgentTasks, thirstyPlants, pendingShopping, budgetSpent, budgetTotal, budgetOk, onNavigate, onQuickDone, onQuickWater }) {
+  const { fmt: fmtEur } = useCurrency()
   const id      = period.id
   const todayTasks = urgentTasks.filter(t => t.deadline && t.deadline <= todayISO())
 
@@ -460,6 +459,7 @@ function TodayMealsWidget({ onNavigate }) {
 
 // ─── Spending chart widget ─────────────────────────────────────────────────────
 function SpendingChartWidget({ budgetExpenses, onNavigate }) {
+  const { fmt: fmtEur } = useCurrency()
   const now    = new Date()
   // Build last 6 months array (oldest → newest)
   const months = Array.from({ length: 6 }, (_, i) => {
@@ -646,6 +646,7 @@ export default function Dashboard({ onNavigate }) {
   const [viewCard, setViewCard] = useState(null)
 
   const { weather, loading: wLoading, locationDenied, refresh: wRefresh } = useWeather()
+  const { fmt: fmtEur } = useCurrency()
 
   const period        = getPeriod()
   const urgentTasks   = tasks.filter(t => ['overdue','pending'].includes(getTaskStatus(t)))

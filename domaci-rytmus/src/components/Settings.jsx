@@ -5,11 +5,14 @@ import {
   Check, AlertTriangle, RefreshCw, Leaf, CheckSquare, ShoppingCart,
   ChevronUp, ChevronDown, Plus, Minus,
   Home, Grid3x3, UtensilsCrossed, Wallet, PawPrint, Zap, Users,
-  Navigation2, LayoutDashboard,
+  Navigation2, LayoutDashboard, Globe, Coins,
 } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
-import { useSyncedStorage } from '../context/SyncContext'
+import { useSyncedStorage, useSync } from '../context/SyncContext'
 import { useAuth } from '../context/AuthContext'
+import { useI18n } from '../context/I18nContext'
+import { LANGUAGES } from '../i18n/index'
+import { CURRENCIES } from '../hooks/useCurrency'
 
 const AVATAR_EMOJIS = ['😊','🧑','👨','👩','🧔','👴','👵','🧒','🧑‍💻','🧑‍🍳','🧑‍🌾','🧑‍🔧']
 
@@ -92,6 +95,8 @@ function Toggle({ value, onChange }) {
 
 export default function Settings() {
   const { user, logout, isAuthEnabled } = useAuth()
+  const { t, lang, setLang } = useI18n()
+  const { updateHousehold, isConnected } = useSync()
   const [userName, setUserName] = useLocalStorage('user-name', '')
   const [userEmoji, setUserEmoji] = useLocalStorage('user-emoji', '😊')
   const [darkMode, setDarkMode] = useLocalStorage('dark-mode', false)
@@ -100,6 +105,7 @@ export default function Settings() {
   const [defaultTaskInterval, setDefaultTaskInterval] = useLocalStorage('default-task-interval', 30)
   const [defaultPlantInterval, setDefaultPlantInterval] = useLocalStorage('default-plant-interval', 7)
   const [showQuotes, setShowQuotes] = useLocalStorage('show-quotes', true)
+  const [currency, setCurrency] = useLocalStorage('currency', 'EUR')
   const [navIds, setNavIds] = useSyncedStorage('nav-tabs', DEFAULT_NAV)
   const [dashWidgets, setDashWidgets] = useLocalStorage('dashboard-widgets', DEFAULT_WIDGETS)
   const [tasks] = useLocalStorage('tasks', [])
@@ -200,12 +206,11 @@ export default function Settings() {
   }
 
   const clearData = (type) => {
-    if (type === 'all') {
-      const keys = ['tasks', 'plants', 'shopping']
-      keys.forEach(k => localStorage.removeItem(k))
-    } else {
-      localStorage.removeItem(type)
-    }
+    const keys = type === 'all' ? ['tasks', 'plants', 'shopping'] : [type]
+    keys.forEach(k => {
+      localStorage.removeItem(k)
+      if (isConnected) updateHousehold(k, [])
+    })
     setConfirmClear(null)
     window.location.reload()
   }
@@ -236,22 +241,22 @@ export default function Settings() {
               <div className="text-xs text-slate-400 truncate">{user.email}</div>
               <div className="flex items-center gap-1 mt-0.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span className="text-xs text-emerald-600 dark:text-emerald-400">Prihlásený cez Google</span>
+                <span className="text-xs text-emerald-600 dark:text-emerald-400">{t('settings.loggedIn')}</span>
               </div>
             </div>
             <button
               onClick={logout}
               className="flex-shrink-0 text-xs font-semibold text-red-500 hover:text-red-700 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 px-3 py-2 rounded-xl transition-colors border border-red-100 dark:border-red-800"
             >
-              Odhlásiť
+              {t('settings.logout')}
             </button>
           </div>
         </div>
       )}
 
       {/* Profile */}
-      <Section title="Profil" icon={User}>
-        <Row label="Avatar">
+      <Section title={t('settings.profile')} icon={User}>
+        <Row label={t('settings.avatar')}>
           <button
             onClick={() => setShowAvatarPicker(!showAvatarPicker)}
             className="text-2xl p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
@@ -274,7 +279,7 @@ export default function Settings() {
             </div>
           </div>
         )}
-        <Row label="Meno" sublabel="Zobrazí sa v pozdrave na domovskej stránke">
+        <Row label={t('settings.name')} sublabel={t('settings.nameHint')}>
           {editingName ? (
             <div className="flex items-center gap-2">
               <input
@@ -294,30 +299,66 @@ export default function Settings() {
               onClick={() => setEditingName(true)}
               className="flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400"
             >
-              {userName || 'Nastaviť'} <ChevronRight size={14} />
+              {userName || t('common.edit')} <ChevronRight size={14} />
             </button>
           )}
         </Row>
       </Section>
 
       {/* Appearance */}
-      <Section title="Vzhľad" icon={Palette}>
-        <Row label="Tmavý režim" sublabel={darkMode ? 'Zapnutý' : 'Vypnutý'}>
+      <Section title={t('settings.appearance')} icon={Palette}>
+        <Row label={t('settings.darkMode')} sublabel={darkMode ? t('settings.darkOn') : t('settings.darkOff')}>
           <Toggle value={darkMode} onChange={setDarkMode} />
         </Row>
-        <Row label="Motivačné citáty" sublabel="Zobrazovať na dashboarde">
+        <Row label={t('settings.quotes')} sublabel={t('settings.quotesHint')}>
           <Toggle value={showQuotes} onChange={setShowQuotes} />
         </Row>
       </Section>
 
+      {/* Language */}
+      <Section title={t('settings.language')} icon={Globe}>
+        <div className="px-4 py-3 flex flex-col gap-2">
+          {LANGUAGES.map(l => (
+            <button key={l.code} onClick={() => setLang(l.code)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left ${
+                lang === l.code
+                  ? 'bg-indigo-50 dark:bg-indigo-900/30 ring-2 ring-indigo-400'
+                  : 'bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700'
+              }`}>
+              <span className="text-xl">{l.flag}</span>
+              <span className={`text-sm font-medium ${lang === l.code ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'}`}>{l.label}</span>
+              {lang === l.code && <Check size={15} className="ml-auto text-indigo-500" />}
+            </button>
+          ))}
+        </div>
+      </Section>
+
+      {/* Currency */}
+      <Section title={t('settings.currency')} icon={Coins}>
+        <div className="px-4 py-3 flex flex-col gap-2">
+          {CURRENCIES.map(c => (
+            <button key={c.code} onClick={() => setCurrency(c.code)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left ${
+                currency === c.code
+                  ? 'bg-indigo-50 dark:bg-indigo-900/30 ring-2 ring-indigo-400'
+                  : 'bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700'
+              }`}>
+              <span className="text-sm font-bold text-slate-500 dark:text-slate-400 w-8">{c.code}</span>
+              <span className={`text-sm font-medium ${currency === c.code ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'}`}>{c.label}</span>
+              {currency === c.code && <Check size={15} className="ml-auto text-indigo-500" />}
+            </button>
+          ))}
+        </div>
+      </Section>
+
       {/* Notifications */}
-      <Section title="Upozornenia" icon={Bell}>
+      <Section title={t('settings.notifications')} icon={Bell}>
         <Row
-          label="Upozornenia prehliadača"
+          label={t('settings.notifBrowser')}
           sublabel={
-            !notifSupported ? 'Nie je podporované' :
-            notifPermission === 'denied' ? 'Zablokované v nastaveniach' :
-            notifEnabled ? 'Zapnuté' : 'Vypnuté'
+            !notifSupported ? t('settings.notifNotSupported') :
+            notifPermission === 'denied' ? t('settings.notifBlocked') :
+            notifEnabled ? t('settings.notifOn') : t('settings.notifOff')
           }
         >
           {notifSupported && notifPermission !== 'denied' ? (
@@ -330,7 +371,7 @@ export default function Settings() {
           )}
         </Row>
         {notifEnabled && notifPermission === 'granted' && (
-          <Row label="Denná pripomienka" sublabel="Čas každodenného upozornenia">
+          <Row label={t('settings.reminder')} sublabel={t('settings.reminderHint')}>
             <input
               type="time"
               value={reminderTime}
@@ -345,18 +386,18 @@ export default function Settings() {
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
           <Navigation2 size={16} className="text-slate-500 dark:text-slate-400" />
-          <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">Navigačná lišta</span>
+          <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">{t('settings.navBar')}</span>
           <span className="ml-auto text-xs text-slate-400">{safeNavIds.length}/{MAX_NAV}</span>
         </div>
         <div className="p-3 flex flex-col gap-1.5">
-          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-0.5">V lište</div>
+          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-0.5">{t('settings.inBar')}</div>
           {safeNavIds.map((id, idx) => {
             const opt = ALL_NAV_OPTIONS.find(o => o.id === id)
             if (!opt) return null
             return (
               <div key={id} className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl px-3 py-2.5">
                 <opt.icon size={16} className={`${opt.color} flex-shrink-0`} />
-                <span className="flex-1 text-sm font-medium text-slate-700 dark:text-slate-300">{opt.label}</span>
+                <span className="flex-1 text-sm font-medium text-slate-700 dark:text-slate-300">{t(`nav.${opt.id}`, opt.label)}</span>
                 <button onClick={() => moveNav(id, 'up')} disabled={idx === 0}
                   className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-20 transition-colors">
                   <ChevronUp size={14} />
@@ -375,13 +416,13 @@ export default function Settings() {
         </div>
         {ALL_NAV_OPTIONS.filter(o => !safeNavIds.includes(o.id)).length > 0 && (
           <div className="px-3 pb-3 flex flex-col gap-1.5">
-            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-0.5">Dostupné</div>
+            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-0.5">{t('settings.available')}</div>
             {ALL_NAV_OPTIONS.filter(o => !safeNavIds.includes(o.id)).map(opt => {
               const full = safeNavIds.length >= MAX_NAV
               return (
                 <div key={opt.id} className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-600 ${full ? 'opacity-40' : ''}`}>
                   <opt.icon size={16} className={`${opt.color} flex-shrink-0`} />
-                  <span className="flex-1 text-sm font-medium text-slate-500 dark:text-slate-400">{opt.label}</span>
+                  <span className="flex-1 text-sm font-medium text-slate-500 dark:text-slate-400">{t(`nav.${opt.id}`, opt.label)}</span>
                   <button onClick={() => addNav(opt.id)} disabled={full}
                     className="p-1 text-emerald-500 hover:text-emerald-700 disabled:pointer-events-none transition-colors">
                     <Plus size={14} />
@@ -398,17 +439,17 @@ export default function Settings() {
         <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
           <LayoutDashboard size={16} className="text-slate-500 dark:text-slate-400" />
           <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">Dashboard</span>
-          <span className="ml-auto text-xs text-slate-400">{safeDash.length}/{WIDGET_DEFS.length} widgetov</span>
+          <span className="ml-auto text-xs text-slate-400">{safeDash.length}/{WIDGET_DEFS.length} {t('settings.widgets')}</span>
         </div>
         <div className="p-3 flex flex-col gap-1.5">
-          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-0.5">Zobrazené</div>
+          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-0.5">{t('settings.visible')}</div>
           {safeDash.map((id, idx) => {
             const w = WIDGET_DEFS.find(x => x.id === id)
             if (!w) return null
             return (
               <div key={id} className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl px-3 py-2.5">
                 <span className="text-base flex-shrink-0">{w.emoji}</span>
-                <span className="flex-1 text-sm font-medium text-slate-700 dark:text-slate-300">{w.label}</span>
+                <span className="flex-1 text-sm font-medium text-slate-700 dark:text-slate-300">{t(`widget.${w.id}`, w.label)}</span>
                 <button onClick={() => moveDash(id, 'up')} disabled={idx === 0}
                   className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-20 transition-colors">
                   <ChevronUp size={14} />
@@ -427,11 +468,11 @@ export default function Settings() {
         </div>
         {WIDGET_DEFS.filter(w => !safeDash.includes(w.id)).length > 0 && (
           <div className="px-3 pb-3 flex flex-col gap-1.5">
-            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-0.5">Dostupné</div>
+            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-0.5">{t('settings.available')}</div>
             {WIDGET_DEFS.filter(w => !safeDash.includes(w.id)).map(w => (
               <div key={w.id} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-600">
                 <span className="text-base flex-shrink-0">{w.emoji}</span>
-                <span className="flex-1 text-sm font-medium text-slate-500 dark:text-slate-400">{w.label}</span>
+                <span className="flex-1 text-sm font-medium text-slate-500 dark:text-slate-400">{t(`widget.${w.id}`, w.label)}</span>
                 <button onClick={() => addDash(w.id)}
                   className="p-1 text-emerald-500 hover:text-emerald-700 transition-colors">
                   <Plus size={14} />
@@ -443,8 +484,8 @@ export default function Settings() {
       </div>
 
       {/* Defaults */}
-      <Section title="Predvolené hodnoty" icon={RefreshCw}>
-        <Row label="Interval úloh" sublabel="Predvolený počet dní pre nové úlohy">
+      <Section title={t('settings.defaults')} icon={RefreshCw}>
+        <Row label={t('settings.taskInterval')} sublabel={t('settings.taskIntervalHint')}>
           <div className="flex items-center gap-2">
             <input
               type="number"
@@ -454,10 +495,10 @@ export default function Settings() {
               onChange={e => setDefaultTaskInterval(parseInt(e.target.value) || 30)}
               className="w-16 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-lg px-2 py-1 text-sm text-center text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
-            <span className="text-sm text-slate-400">dní</span>
+            <span className="text-sm text-slate-400">{t('common.days')}</span>
           </div>
         </Row>
-        <Row label="Interval polievania" sublabel="Predvolený počet dní pre nové rastliny">
+        <Row label={t('settings.plantInterval')} sublabel={t('settings.plantIntervalHint')}>
           <div className="flex items-center gap-2">
             <input
               type="number"
@@ -467,16 +508,16 @@ export default function Settings() {
               onChange={e => setDefaultPlantInterval(parseInt(e.target.value) || 7)}
               className="w-16 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-lg px-2 py-1 text-sm text-center text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
-            <span className="text-sm text-slate-400">dní</span>
+            <span className="text-sm text-slate-400">{t('common.days')}</span>
           </div>
         </Row>
       </Section>
 
       {/* Data */}
-      <Section title="Dáta" icon={Database}>
+      <Section title={t('settings.data')} icon={Database}>
         <Row
-          label="Exportovať dáta"
-          sublabel={`${totalItems} položiek celkom`}
+          label={t('settings.exportData')}
+          sublabel={`${totalItems} ${t('common.items')}`}
           onClick={exportData}
         >
           {exportSuccess
@@ -485,10 +526,10 @@ export default function Settings() {
           }
         </Row>
 
-        <Row label="Importovať dáta" sublabel="Načítať zo zálohy (.json)">
+        <Row label={t('settings.importData')} sublabel={t('settings.importHint')}>
           <label className="flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 cursor-pointer">
             <Upload size={15} />
-            <span>Vybrať súbor</span>
+            <span>{t('settings.chooseFile')}</span>
             <input type="file" accept=".json" onChange={importData} className="hidden" />
           </label>
         </Row>
@@ -499,7 +540,7 @@ export default function Settings() {
         )}
 
         <div className="px-4 py-3 flex flex-col gap-2">
-          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Vymazať dáta</div>
+          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('settings.clearData')}</div>
           <div className="flex flex-wrap gap-2">
             {[
               { key: 'tasks', label: 'Úlohy', icon: CheckSquare, count: tasks.length },
@@ -520,20 +561,20 @@ export default function Settings() {
             onClick={() => setConfirmClear('all')}
             className="flex items-center justify-center gap-2 text-sm px-4 py-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors mt-1"
           >
-            <Trash2 size={14} /> Vymazať všetko
+            <Trash2 size={14} /> {t('settings.clearAll')}
           </button>
         </div>
       </Section>
 
       {/* About */}
-      <Section title="O aplikácii" icon={Info}>
-        <Row label="Verzia" sublabel="Domáci Rytmus">
+      <Section title={t('settings.about')} icon={Info}>
+        <Row label={t('settings.version')} sublabel="Domáci Rytmus">
           <span className="text-sm text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">1.0.0</span>
         </Row>
-        <Row label="Úložisko" sublabel="Dáta sú uložené len v tvojom zariadení">
-          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Lokálne</span>
+        <Row label={t('settings.storage')} sublabel={t('settings.storageHint')}>
+          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">{t('settings.storageLocal')}</span>
         </Row>
-        <Row label="Vyvinuté s" sublabel="React · Tailwind · lucide-react">
+        <Row label={t('settings.builtWith')} sublabel="React · Tailwind · lucide-react">
           <span className="text-base">❤️</span>
         </Row>
       </Section>
@@ -551,9 +592,9 @@ export default function Settings() {
                 <Trash2 size={20} className="text-red-600" />
               </div>
               <div>
-                <div className="font-semibold text-slate-800 dark:text-slate-200">Naozaj vymazať?</div>
+                <div className="font-semibold text-slate-800 dark:text-slate-200">{t('settings.confirmDelete')}</div>
                 <div className="text-sm text-slate-500">
-                  {confirmClear === 'all' ? 'Všetky dáta budú vymazané.' : `Sekcia "${confirmClear}" bude vymazaná.`}
+                  {confirmClear === 'all' ? t('settings.confirmDeleteAll') : `"${confirmClear}"`}
                 </div>
               </div>
             </div>
@@ -562,13 +603,13 @@ export default function Settings() {
                 onClick={() => setConfirmClear(null)}
                 className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
               >
-                Zrušiť
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => clearData(confirmClear)}
                 className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
               >
-                Vymazať
+                {t('common.delete')}
               </button>
             </div>
           </div>

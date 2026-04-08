@@ -20,7 +20,8 @@ import MealPlan from './components/MealPlan'
 import More from './components/More'
 import InstallPrompt from './components/InstallPrompt'
 import LoginScreen from './components/LoginScreen'
-import { ThemeProvider, THEMES } from './context/ThemeContext'
+import { ThemeProvider } from './context/ThemeContext'
+import { I18nProvider, useI18n } from './context/I18nContext'
 import { SyncProvider, useSync, useSyncedStorage } from './context/SyncContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { useLocalStorage } from './hooks/useLocalStorage'
@@ -105,6 +106,7 @@ function useLongPress(callback, ms = 600) {
 
 // Nav customizer modal
 function NavCustomizerModal({ navIds, onChange, onClose }) {
+  const { t } = useI18n()
   const [draft, setDraft] = useState(navIds)
   const selected = draft.map(id => ALL_NAV_OPTIONS.find(o => o.id === id)).filter(Boolean)
   const available = ALL_NAV_OPTIONS.filter(o => !draft.includes(o.id))
@@ -163,7 +165,7 @@ function NavCustomizerModal({ navIds, onChange, onClose }) {
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${c.bg}`}>
                     <opt.icon size={16} className={c.active} />
                   </div>
-                  <span className="flex-1 text-sm font-medium text-slate-800 dark:text-slate-100">{opt.label}</span>
+                  <span className="flex-1 text-sm font-medium text-slate-800 dark:text-slate-100">{t(`nav.${opt.id}`, opt.label)}</span>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => moveUp(idx)}
@@ -205,7 +207,7 @@ function NavCustomizerModal({ navIds, onChange, onClose }) {
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${c.bg}`}>
                       <opt.icon size={16} className={c.active} />
                     </div>
-                    <span className="flex-1 text-sm font-medium text-slate-800 dark:text-slate-100">{opt.label}</span>
+                    <span className="flex-1 text-sm font-medium text-slate-800 dark:text-slate-100">{t(`nav.${opt.id}`, opt.label)}</span>
                     <button
                       onClick={() => add(opt.id)}
                       disabled={full}
@@ -259,11 +261,11 @@ function SyncIndicator() {
 
 function AppInner() {
   const { user, loading: authLoading, isAuthEnabled } = useAuth()
+  const { t } = useI18n()
   const [activeTab, setActiveTab] = useLocalStorage('active-tab', 'home')
   const [subPage, setSubPage] = useState(null)
   const [onboardingDone, setOnboardingDone] = useLocalStorage('onboarding-done', false)
   const [darkMode] = useLocalStorage('dark-mode', false)
-  const [colorTheme] = useLocalStorage('color-theme', 'indigo')
   const [navIds, setNavIds] = useSyncedStorage('nav-tabs', DEFAULT_NAV)
   const [customizerOpen, setCustomizerOpen] = useState(false)
   const { isConnected, householdData } = useSync()
@@ -283,14 +285,6 @@ function AppInner() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
   }, [darkMode])
-
-  useEffect(() => {
-    const t = THEMES[colorTheme] || THEMES.indigo
-    const root = document.documentElement
-    root.style.setProperty('--color-primary', t.primary)
-    root.style.setProperty('--color-primary-bg', t.bg)
-    root.style.setProperty('--color-primary-ring', t.ring)
-  }, [colorTheme])
 
   const taskBadge     = tasks.filter(t => { const d = getDaysSince(t.lastDone); return d === null || t.intervalDays - d <= 0 }).length
   const plantBadge    = plants.filter(p => { const d = getDaysSince(p.lastWatered); return d === null || p.intervalDays - d <= 0 }).length
@@ -322,9 +316,9 @@ function AppInner() {
   const showingSubPage = subPage && SUB_PAGES[subPage]
 
   const getHeaderTitle = () => {
-    if (showingSubPage) return SUB_PAGES[subPage].label
+    if (showingSubPage) return t(`nav.${subPage}`, SUB_PAGES[subPage].label)
     const opt = ALL_NAV_OPTIONS.find(o => o.id === activeTab)
-    if (opt) return opt.label
+    if (opt) return t(`nav.${opt.id}`, opt.label)
     return 'Domáci Rytmus'
   }
 
@@ -429,20 +423,11 @@ function AppInner() {
                       </span>
                     )}
                   </div>
-                  <span className={`text-[10px] leading-tight ${isActive ? 'font-semibold' : 'font-medium'}`}>{tab.label}</span>
+                  <span className={`text-[10px] leading-tight ${isActive ? 'font-semibold' : 'font-medium'}`}>{t(`nav.${tab.id}`, tab.label)}</span>
                 </button>
               )
             })}
 
-            {/* Edit nav button */}
-            <button
-              onClick={() => setCustomizerOpen(true)}
-              className="absolute right-1 bottom-4 flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-              title="Prispôsobiť lištu"
-            >
-              <Settings2 size={15} />
-              <span className="text-[8px] font-semibold leading-none">Upraviť</span>
-            </button>
           </div>
         </nav>
       </div>
@@ -466,12 +451,14 @@ function SyncBridge({ children }) {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <SyncBridge>
-          <AppInner />
-        </SyncBridge>
-      </AuthProvider>
-    </ThemeProvider>
+    <I18nProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <SyncBridge>
+            <AppInner />
+          </SyncBridge>
+        </AuthProvider>
+      </ThemeProvider>
+    </I18nProvider>
   )
 }

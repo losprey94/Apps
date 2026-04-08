@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Plus, Trash2, X, Settings2, TrendingDown, TrendingUp, ChevronDown, ChevronRight, Wallet, Check } from 'lucide-react'
 import { useSyncedStorage } from '../context/SyncContext'
+import { useCurrency } from '../hooks/useCurrency'
 
 // ─── Default categories ───────────────────────────────────────────────────────
 const DEFAULT_CATEGORIES = [
@@ -42,10 +43,6 @@ function filterByPeriod(expenses, period) {
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6); sun.setHours(23,59,59,999)
     return d >= mon && d <= sun
   })
-}
-
-function fmtEur(n) {
-  return new Intl.NumberFormat('sk-SK', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(n)
 }
 
 function fmtDate(iso) {
@@ -318,6 +315,8 @@ function AddExpenseModal({ categories, onAdd, onClose }) {
 
 // ─── Main Budget component ────────────────────────────────────────────────────
 export default function Budget() {
+  const { fmt } = useCurrency()
+  const fmtEur = n => fmt(n, 2)
   const [config, setConfig] = useSyncedStorage('budget-config', {
     period: 'monthly',
     totalBudget: 1000,
