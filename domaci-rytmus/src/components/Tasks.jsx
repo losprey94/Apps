@@ -156,7 +156,7 @@ export default function Tasks() {
 
   const [showForm, setShowForm]     = useState(false)
   const [name, setName]             = useState('')
-  const [repeating, setRepeating]   = useState(true)
+  const [repeating, setRepeating]   = useState(false)
   const [interval, setInterval]     = useState('30')
   const [deadline, setDeadline]     = useState('')
   const [assignedTo, setAssignedTo] = useState('')
@@ -201,7 +201,7 @@ export default function Tasks() {
       assignedTo: assignedTo || null,
     }])
     haptic.done()
-    setName(''); setRepeating(true); setInterval('30'); setDeadline(''); setAssignedTo('')
+    setName(''); setRepeating(false); setInterval('30'); setDeadline(''); setAssignedTo('')
     setShowForm(false)
   }
 
@@ -212,7 +212,10 @@ export default function Tasks() {
       filterMember === 'unassigned' ? !t.assignedTo : t.assignedTo === filterMember
     )
   }
-  if (filterStatus !== 'all') {
+  if (filterStatus === 'all') {
+    // Default view: hide recently-completed repeating tasks (status 'ok')
+    filtered = filtered.filter(t => getStatus(t) !== 'ok')
+  } else {
     filtered = filtered.filter(t => getStatus(t) === filterStatus)
   }
 
@@ -386,20 +389,26 @@ export default function Tasks() {
                 className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
 
-              {/* Repeating toggle */}
-              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-700/50 rounded-xl px-3 py-3">
-                <div>
-                  <div className="text-sm font-medium text-slate-700 dark:text-slate-200">Opakuje sa</div>
-                  <div className="text-xs text-slate-400 mt-0.5">{repeating ? 'Pravidelná údržba s intervalom' : 'Splní sa raz a zmizne'}</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setRepeating(!repeating)}
-                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${repeating ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-600'}`}
-                >
-                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${repeating ? 'translate-x-5' : ''}`} />
-                </button>
-              </div>
+              {/* Repeating checkbox */}
+              <button
+                type="button"
+                onClick={() => setRepeating(!repeating)}
+                className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 transition-colors text-left w-full ${
+                  repeating
+                    ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
+                    : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50'
+                }`}
+              >
+                <span className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                  repeating ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 dark:border-slate-500'
+                }`}>
+                  {repeating && <CheckCircle2 size={13} className="text-white" strokeWidth={3} />}
+                </span>
+                <span>
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200 block">Opakujúca úloha</span>
+                  <span className="text-xs text-slate-400">{repeating ? 'Bude sa opakovať podľa intervalu' : 'Splní sa raz a zmizne'}</span>
+                </span>
+              </button>
 
               {/* Interval — only when repeating */}
               {repeating && (
