@@ -39,6 +39,7 @@ export default function Onboarding({ onFinish, googleUser }) {
       setTasks(prev => [...prev, {
         id: Date.now(),
         name: taskName.trim(),
+        repeating: true,
         intervalDays: parseInt(taskInterval) || 7,
         lastDone: null,
         deadline: null,

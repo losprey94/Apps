@@ -40,7 +40,7 @@ export default function LoginScreen() {
       {/* Center content */}
       <div className="flex flex-col items-center text-center gap-8 w-full max-w-sm">
         {/* Logo */}
-        <div>
+        <div className="animate-fade-in" style={{ animationDelay: '0ms' }}>
           <div className="w-24 h-24 rounded-3xl flex items-center justify-center text-5xl shadow-2xl mx-auto mb-6"
             style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
             🏠
@@ -52,51 +52,53 @@ export default function LoginScreen() {
         </div>
 
         {/* Feature pills */}
-        <div className="flex flex-wrap gap-2 justify-center">
+        <div className="flex flex-wrap gap-2 justify-center animate-fade-in" style={{ animationDelay: '120ms', animationFillMode: 'both' }}>
           {['✅ Úlohy', '🌿 Rastliny', '🛒 Nákup', '💶 Rozpočet', '👨‍👩‍👧 Rodina'].map(f => (
             <span key={f} className="bg-slate-800 text-slate-300 text-xs px-3 py-1.5 rounded-full">{f}</span>
           ))}
         </div>
 
         {/* Sign in button */}
-        {isAuthEnabled ? (
-          <div className="w-full flex flex-col gap-3">
-            <button
-              onClick={handleSignIn}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-50 active:scale-95 text-gray-700 font-bold py-4 rounded-2xl text-base transition-all disabled:opacity-60 shadow-lg"
-            >
-              {loading
-                ? <Loader size={20} className="animate-spin text-gray-400" />
-                : <GoogleIcon />
-              }
-              {loading ? 'Prihlasujem…' : 'Prihlásiť sa cez Google'}
-            </button>
+        <div className="w-full animate-slide-up" style={{ animationDelay: '220ms', animationFillMode: 'both' }}>
+          {isAuthEnabled ? (
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleSignIn}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-50 active:scale-95 text-gray-700 font-bold py-4 rounded-2xl text-base transition-all disabled:opacity-60 shadow-lg"
+              >
+                {loading
+                  ? <Loader size={20} className="animate-spin text-gray-400" />
+                  : <GoogleIcon />
+                }
+                {loading ? 'Prihlasujem…' : 'Prihlásiť sa cez Google'}
+              </button>
 
-            {error && (
-              <div className="bg-red-900/40 border border-red-700 rounded-xl px-4 py-3 text-sm text-red-300">
-                ⚠️ {error}
-              </div>
-            )}
+              {error && (
+                <div className="bg-red-900/40 border border-red-700 rounded-xl px-4 py-3 text-sm text-red-300">
+                  ⚠️ {error}
+                </div>
+              )}
 
-            <p className="text-slate-500 text-xs text-center leading-relaxed">
-              Prihlásenie je bezpečné cez Google účet.<br />
-              Neuchovávame žiadne heslá.
-            </p>
-          </div>
-        ) : (
-          // Firebase not configured — show setup notice
-          <div className="w-full bg-amber-900/30 border border-amber-700 rounded-2xl p-5 text-left">
-            <div className="font-semibold text-amber-300 mb-2">⚙️ Firebase nie je nastavený</div>
-            <p className="text-amber-200/80 text-sm leading-relaxed">
-              Aby fungovalo prihlásenie cez Google, musíš najprv nastaviť Firebase a GitHub secrets. Pozri návod v sekcii Rodina.
-            </p>
-          </div>
-        )}
+              <p className="text-slate-500 text-xs text-center leading-relaxed">
+                Prihlásenie je bezpečné cez Google účet.<br />
+                Neuchovávame žiadne heslá.
+              </p>
+            </div>
+          ) : (
+            // Firebase not configured — show setup notice
+            <div className="w-full bg-amber-900/30 border border-amber-700 rounded-2xl p-5 text-left">
+              <div className="font-semibold text-amber-300 mb-2">⚙️ Firebase nie je nastavený</div>
+              <p className="text-amber-200/80 text-sm leading-relaxed">
+                Aby fungovalo prihlásenie cez Google, musíš najprv nastaviť Firebase a GitHub secrets. Pozri návod v sekcii Rodina.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Bottom note */}
-      <p className="text-slate-600 text-xs text-center pb-2">
+      <p className="text-slate-600 text-xs text-center pb-2 animate-fade-in" style={{ animationDelay: '350ms', animationFillMode: 'both' }}>
         Verzia pre rodinu · Domáci Rytmus
       </p>
     </div>

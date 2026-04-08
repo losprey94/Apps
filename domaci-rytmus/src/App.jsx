@@ -421,7 +421,7 @@ function AppInner() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto px-4 pt-4 pb-28">
+        <main key={showingSubPage ? subPage : activeTab} className="flex-1 overflow-y-auto px-4 pt-4 pb-28 animate-fade-in">
           {renderContent()}
         </main>
 
