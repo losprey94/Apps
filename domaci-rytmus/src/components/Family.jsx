@@ -29,6 +29,7 @@ function SyncPanel() {
   const [creating, setCreating] = useState(false)
   const [joining, setJoining] = useState(false)
   const [codeCopied, setCodeCopied] = useState(false)
+  const [confirmLeave, setConfirmLeave] = useState(false)
 
   if (!isConfigured) {
     return (
@@ -107,12 +108,20 @@ function SyncPanel() {
             {statusIcon}
             <span className="text-sm font-semibold">{statusLabel}</span>
           </div>
-          <button
-            onClick={leaveHousehold}
-            className="flex items-center gap-1.5 text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition-colors"
-          >
-            <LogOut size={12} /> Odpojiť
-          </button>
+          {confirmLeave ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-white/70">Odpojiť?</span>
+              <button onClick={leaveHousehold} className="text-xs font-semibold bg-red-500 hover:bg-red-600 text-white px-2.5 py-1 rounded-lg transition-colors">Áno</button>
+              <button onClick={() => setConfirmLeave(false)} className="text-white/70 hover:text-white p-0.5"><X size={14} /></button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmLeave(true)}
+              className="flex items-center gap-1.5 text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition-colors"
+            >
+              <LogOut size={12} /> Odpojiť
+            </button>
+          )}
         </div>
 
         <div className="text-emerald-100 text-xs mb-1">Kód domácnosti</div>
@@ -196,6 +205,7 @@ export default function Family() {
   const [memberEmoji, setMemberEmoji] = useState('👨')
   const [memberColor, setMemberColor] = useState('indigo')
 
+  const [confirmDeleteMember, setConfirmDeleteMember] = useState(null)
   const [shareType, setShareType] = useState(null)
   const [shareLink, setShareLink] = useState('')
   const [copied, setCopied] = useState(false)
@@ -213,7 +223,10 @@ export default function Family() {
     setShowForm(false)
   }
 
-  const deleteMember = (id) => setMembers(prev => prev.filter(m => m.id !== id))
+  const deleteMember = (id) => {
+    setMembers(prev => prev.filter(m => m.id !== id))
+    setConfirmDeleteMember(null)
+  }
 
   const generateShareLink = (type) => {
     let data = { type, generatedAt: new Date().toISOString() }
@@ -309,9 +322,16 @@ export default function Family() {
                     {assignedTasks.length > 0 ? `${assignedTasks.length} priradených úloh` : 'Žiadne úlohy'}
                   </div>
                 </div>
-                <button onClick={() => deleteMember(member.id)} className="text-slate-300 hover:text-red-400 transition-colors">
-                  <Trash2 size={15} />
-                </button>
+                {confirmDeleteMember === member.id ? (
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => deleteMember(member.id)} className="text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded-lg">Zmazať</button>
+                    <button onClick={() => setConfirmDeleteMember(null)} className="text-slate-400 hover:text-slate-600 p-1"><X size={13} /></button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmDeleteMember(member.id)} className="text-slate-300 hover:text-red-400 transition-colors">
+                    <Trash2 size={18} />
+                  </button>
+                )}
               </div>
             )
           })}

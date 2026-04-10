@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Trash2, X, Phone, Search } from 'lucide-react'
+import { Plus, Trash2, X, Phone, Search, Lock } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
 const CATEGORIES = [
@@ -32,6 +32,7 @@ export default function Contacts() {
   const [emoji, setEmoji] = useState('👤')
   const [notes, setNotes] = useState('')
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(null)
 
   const addContact = (e) => {
     e.preventDefault()
@@ -41,7 +42,10 @@ export default function Contacts() {
     setShowForm(false)
   }
 
-  const deleteContact = (id) => setContacts(contacts.filter(c => c.id !== id))
+  const deleteContact = (id) => {
+    setContacts(contacts.filter(c => c.id !== id))
+    setConfirmDelete(null)
+  }
 
   const filtered = contacts.filter(c => {
     const matchCat = activeCategory === 'all' || c.category === activeCategory
@@ -112,9 +116,18 @@ export default function Contacts() {
                 >
                   <Phone size={15} />
                 </a>
-                {contact.id > 4 && (
-                  <button onClick={() => deleteContact(contact.id)} className="text-slate-300 hover:text-red-400 transition-colors">
-                    <Trash2 size={14} />
+                {contact.id <= 4 ? (
+                  <div title="Predvolené záchranné číslo" className="w-7 h-7 flex items-center justify-center text-slate-200 dark:text-slate-600">
+                    <Lock size={13} />
+                  </div>
+                ) : confirmDelete === contact.id ? (
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => deleteContact(contact.id)} className="text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded-lg">Zmazať</button>
+                    <button onClick={() => setConfirmDelete(null)} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={13} /></button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmDelete(contact.id)} className="text-slate-300 hover:text-red-400 transition-colors">
+                    <Trash2 size={18} />
                   </button>
                 )}
               </div>

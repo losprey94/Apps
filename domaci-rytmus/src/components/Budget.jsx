@@ -457,6 +457,23 @@ export default function Budget() {
           </div>
         </div>
 
+        {/* ── First-time hint ─────────────────────────────────────────────── */}
+        {expenses.length === 0 && (
+          <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-2xl p-4 flex items-start gap-3">
+            <div className="text-2xl flex-shrink-0">💡</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">Ako začať?</div>
+              <div className="text-xs text-indigo-600 dark:text-indigo-400 mt-1 leading-relaxed">
+                Nastav si mesačný rozpočet a pridaj prvý výdavok tlačidlom +. Appka ti ukáže, koľko ti zostáva.
+              </div>
+              <button onClick={() => setShowSetup(true)}
+                className="mt-2.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-colors">
+                Nastaviť rozpočet
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── Set limits button ────────────────────────────────────────────── */}
         <button
           onClick={() => setShowSetup(true)}

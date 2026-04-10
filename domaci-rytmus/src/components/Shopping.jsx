@@ -36,6 +36,7 @@ function ShoppingList() {
   const [expandedCategories, setExpandedCategories] = useLocalStorage('shopping-expanded', {})
   const [showDone, setShowDone] = useLocalStorage('shopping-show-done', true)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [confirmClear, setConfirmClear] = useState(false)
   const haptic = useHaptic()
   const { pushNotif } = useNotif()
   const hasFamily = members.length > 0
@@ -51,7 +52,11 @@ function ShoppingList() {
     setItems(items.filter(i => i.id !== id))
     setConfirmDelete(null)
   }
-  const clearDone = () => { haptic.tap(); setItems(items.filter(i => !i.done)) }
+  const clearDone = () => {
+    haptic.tap()
+    setItems(items.filter(i => !i.done))
+    setConfirmClear(false)
+  }
 
   const addItem = (name, cat = selectedCategory, qty = quantity) => {
     if (!name.trim()) return
@@ -110,12 +115,20 @@ function ShoppingList() {
             </div>
           </div>
           {doneItems.length > 0 && (
-            <button
-              onClick={clearDone}
-              className="text-xs text-slate-400 hover:text-red-500 transition-colors border border-slate-200 dark:border-slate-600 hover:border-red-200 rounded-xl px-3 py-1.5"
-            >
-              Vymazať hotové
-            </button>
+            confirmClear ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-slate-500 dark:text-slate-400">Zmazať {doneItems.length}?</span>
+                <button onClick={clearDone} className="text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-2.5 py-1 rounded-lg">Áno</button>
+                <button onClick={() => setConfirmClear(false)} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={14} /></button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmClear(true)}
+                className="text-xs text-slate-400 hover:text-red-500 transition-colors border border-slate-200 dark:border-slate-600 hover:border-red-200 rounded-xl px-3 py-1.5"
+              >
+                Vymazať hotové
+              </button>
+            )
           )}
         </div>
 
