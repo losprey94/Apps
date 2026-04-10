@@ -35,7 +35,7 @@ function getTaskStatus(t) {
 }
 function getPlantStatus(p) {
   const d = getDaysSince(p.lastWatered)
-  if (d === null) return 'thirsty'
+  if (d === null || !p.intervalDays) return 'thirsty'
   return p.intervalDays - d <= 0 ? 'thirsty' : p.intervalDays - d <= 1 ? 'soon' : 'ok'
 }
 function filterPeriod(expenses, period) {

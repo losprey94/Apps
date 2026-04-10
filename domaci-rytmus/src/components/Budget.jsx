@@ -85,9 +85,14 @@ function RingProgress({ pct, size = 130, stroke = 11, color = '#10b981', childre
 
 // ─── Budget setup modal ───────────────────────────────────────────────────────
 function SetupModal({ config, onSave, onClose }) {
-  const [period, setPeriod]     = useState(config.period)
-  const [total, setTotal]       = useState(String(config.totalBudget))
-  const [cats, setCats]         = useState(config.categories.map(c => ({ ...c })))
+  const safe = config || {}
+  const [period, setPeriod]     = useState(safe.period || 'monthly')
+  const [total, setTotal]       = useState(String(safe.totalBudget || 1000))
+  const [cats, setCats]         = useState(
+    Array.isArray(safe.categories) && safe.categories.length > 0
+      ? safe.categories.map(c => ({ ...c }))
+      : DEFAULT_CATEGORIES.map(c => ({ ...c }))
+  )
   const [newCatName, setNewCatName] = useState('')
   const [newCatEmoji, setNewCatEmoji] = useState('💰')
 
@@ -223,8 +228,9 @@ function SetupModal({ config, onSave, onClose }) {
 
 // ─── Add expense modal ────────────────────────────────────────────────────────
 function AddExpenseModal({ categories, onAdd, onClose }) {
+  const safeCategories = Array.isArray(categories) && categories.length > 0 ? categories : DEFAULT_CATEGORIES
   const [amount, setAmount]     = useState('')
-  const [catId, setCatId]       = useState(categories[0]?.id || '')
+  const [catId, setCatId]       = useState(safeCategories[0].id)
   const [note, setNote]         = useState('')
   const [date, setDate]         = useState(new Date().toISOString().split('T')[0])
   const [done, setDone]         = useState(false)
@@ -267,7 +273,7 @@ function AddExpenseModal({ categories, onAdd, onClose }) {
           <div>
             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 block">Kategória</label>
             <div className="grid grid-cols-4 gap-2">
-              {categories.map(cat => (
+              {safeCategories.map(cat => (
                 <button
                   key={cat.id}
                   type="button"

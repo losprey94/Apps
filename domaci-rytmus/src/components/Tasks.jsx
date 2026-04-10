@@ -327,7 +327,7 @@ export default function Tasks() {
                           <span className="text-xs text-slate-500 dark:text-slate-400">{assignee.emoji} {assignee.name}</span>
                         )}
                       </div>
-                      {task.repeating !== false && (
+                      {task.repeating !== false && task.intervalDays && (
                         <div className="mt-0.5 text-xs text-slate-400">Každých {task.intervalDays} {task.intervalDays < 5 ? 'dni' : 'dní'}</div>
                       )}
                     </div>

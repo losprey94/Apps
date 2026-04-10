@@ -56,7 +56,7 @@ export default function More({ onNavigate, navIds = [] }) {
   const readingsCount = Object.values(energyReadings).flat().length
   const periodExp     = filterByPeriod(budgetExpenses, budgetConfig.period)
   const budgetSpent   = periodExp.reduce((s, e) => s + e.amount, 0)
-  const budgetPct     = Math.round((budgetSpent / budgetConfig.totalBudget) * 100)
+  const budgetPct     = budgetConfig.totalBudget ? Math.round((budgetSpent / budgetConfig.totalBudget) * 100) : 0
 
   const [mealPlan] = useSyncedStorage('meal-plan', {})
   const todayMeals = Object.values(mealPlan[new Date().toISOString().split('T')[0]] || {}).flatMap(g => Object.values(g)).filter(Boolean).length
