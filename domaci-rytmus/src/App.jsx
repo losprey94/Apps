@@ -329,10 +329,9 @@ function AppInner() {
     return 0
   }
 
-  // Navigate: sub-pages that are directly in nav act as top-level tabs
+  // Navigate: anything not in nav opens as sub-page (with back button)
   const navigate = useCallback((target) => {
-    if (SUB_PAGES[target] && !safeNavIds.includes(target)) {
-      // Not in nav → use sub-page overlay (with back button)
+    if (!safeNavIds.includes(target) && target !== 'more') {
       setActiveTab('more')
       setSubPage(target)
     } else {
@@ -345,10 +344,15 @@ function AppInner() {
 
   // Determine what's displayed
   const isInNav = safeNavIds.includes(activeTab)
-  const showingSubPage = subPage && SUB_PAGES[subPage]
+  const showingSubPage = !!subPage
+
+  const getSubPageLabel = () => {
+    if (SUB_PAGES[subPage]) return SUB_PAGES[subPage].label
+    return ALL_NAV_OPTIONS.find(o => o.id === subPage)?.label ?? subPage
+  }
 
   const getHeaderTitle = () => {
-    if (showingSubPage) return t(`nav.${subPage}`, SUB_PAGES[subPage].label)
+    if (showingSubPage) return t(`nav.${subPage}`, getSubPageLabel())
     const opt = ALL_NAV_OPTIONS.find(o => o.id === activeTab)
     if (opt) return t(`nav.${opt.id}`, opt.label)
     return 'Domáci Rytmus'
@@ -357,15 +361,20 @@ function AppInner() {
   const renderContent = () => {
     // Sub-page overlay (via internal navigation with back button)
     if (showingSubPage) {
-      const SubComp = SUB_PAGES[subPage].component
-      return <SubComp />
+      if (subPage === 'tasks')    return <Tasks />
+      if (subPage === 'plants')   return <Plants />
+      if (subPage === 'shopping') return <Shopping />
+      if (SUB_PAGES[subPage]) {
+        const SubComp = SUB_PAGES[subPage].component
+        return <SubComp />
+      }
     }
     // Direct tabs (including sub-pages promoted to nav)
     if (activeTab === 'home')     return <Dashboard onNavigate={navigate} />
     if (activeTab === 'tasks')    return <Tasks />
     if (activeTab === 'plants')   return <Plants />
     if (activeTab === 'shopping') return <Shopping />
-    if (activeTab === 'more')     return <More onNavigate={navigate} />
+    if (activeTab === 'more')     return <More onNavigate={navigate} navIds={safeNavIds} />
     // Sub-pages accessed directly from nav
     if (SUB_PAGES[activeTab]) {
       const SubComp = SUB_PAGES[activeTab].component
