@@ -95,6 +95,7 @@ function SetupModal({ config, onSave, onClose }) {
   )
   const [newCatName, setNewCatName] = useState('')
   const [newCatEmoji, setNewCatEmoji] = useState('💰')
+  const { fmt: fmtEur } = useCurrency()
 
   const updateCatBudget = (id, val) =>
     setCats(prev => prev.map(c => c.id === id ? { ...c, budget: parseFloat(val) || 0 } : c))
