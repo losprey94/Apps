@@ -163,6 +163,8 @@ export default function Tasks() {
   const [deadline, setDeadline]     = useState('')
   const [assignedTo, setAssignedTo] = useState('')
   const [justDone, setJustDone]     = useState(null)
+  const [dyingTask, setDyingTask]   = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null)
   const [filterMember, setFilterMember] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
 
@@ -170,15 +172,17 @@ export default function Tasks() {
     const task = tasks.find(t => t.id === id)
     if (!task) return
     if (task.repeating === false) {
-      // One-time task — flash then delete
+      // One-time task — green flash then fade out and delete
       setJustDone(id)
       addEvent('tasks', '✅', 'Hotovo', task.name)
       pushNotif('tasks', '✅', 'Hotovo', task.name)
       haptic.success()
+      setTimeout(() => setDyingTask(id), 400)
       setTimeout(() => {
         setTasks(prev => prev.filter(t => t.id !== id))
         setJustDone(null)
-      }, 800)
+        setDyingTask(null)
+      }, 750)
     } else {
       // Repeating task — mark done, keep in list
       setTasks(tasks.map(t => t.id === id ? { ...t, lastDone: new Date().toISOString() } : t))
@@ -190,7 +194,11 @@ export default function Tasks() {
     }
   }
 
-  const deleteTask = (id) => { haptic.tap(); setTasks(tasks.filter(t => t.id !== id)) }
+  const deleteTask = (id) => {
+    haptic.tap()
+    setTasks(tasks.filter(t => t.id !== id))
+    setConfirmDelete(null)
+  }
 
   const addTask = (e) => {
     e.preventDefault()
@@ -291,11 +299,14 @@ export default function Tasks() {
           const cfg      = STATUS_CONFIG[status]
           const days     = getDaysSince(task.lastDone)
           const isDone   = justDone === task.id
+          const isDying  = dyingTask === task.id
           const assignee = members.find(m => m.id === task.assignedTo)
           const dlInfo   = getDeadlineInfo(task.deadline)
 
           return (
-            <div key={task.id} className={`bg-white dark:bg-slate-800 rounded-2xl border ${cfg.border} shadow-sm overflow-hidden ${isDone ? 'animate-pop' : ''}`}>
+            <div key={task.id}
+              style={{ transition: 'opacity 0.3s, transform 0.3s' }}
+              className={`bg-white dark:bg-slate-800 rounded-2xl border ${cfg.border} shadow-sm overflow-hidden ${isDone ? 'animate-pop' : ''} ${isDying ? 'opacity-0 scale-95 -translate-y-1 pointer-events-none' : ''}`}>
               <div className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -332,9 +343,16 @@ export default function Tasks() {
                       )}
                     </div>
                   </div>
-                  <button onClick={() => deleteTask(task.id)} className="text-slate-300 hover:text-red-400 transition-colors p-1">
-                    <Trash2 size={15} />
-                  </button>
+                  {confirmDelete === task.id ? (
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button onClick={() => deleteTask(task.id)} className="text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded-lg">Zmazať</button>
+                      <button onClick={() => setConfirmDelete(null)} className="text-slate-400 hover:text-slate-600 p-1"><X size={14} /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setConfirmDelete(task.id)} className="text-slate-300 hover:text-red-400 transition-colors p-1 flex-shrink-0">
+                      <Trash2 size={18} />
+                    </button>
+                  )}
                 </div>
 
                 {task.repeating !== false && days !== null && (

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import { CheckCircle2, Droplets, ShoppingCart, ChevronRight, Zap, CreditCard, Wallet, Wind, MapPin, RefreshCw, Settings, X, ChevronUp, ChevronDown, GripVertical } from 'lucide-react'
+import { CheckCircle2, Droplets, ShoppingCart, ChevronRight, Zap, CreditCard, Wallet, Wind, MapPin, RefreshCw, Settings2, X, ChevronUp, ChevronDown, GripVertical } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useSyncedStorage } from '../context/SyncContext'
 import { CardViewer } from './LoyaltyCards'
@@ -840,15 +840,16 @@ export default function Dashboard({ onNavigate }) {
           </button>
         </div>
 
-        {/* Customizer button */}
-        <button onClick={() => setShowCustomizer(true)}
-          className="mt-3 w-full flex items-center justify-center gap-1.5 bg-white/15 hover:bg-white/25 active:bg-white/30 rounded-2xl py-2 text-xs font-semibold transition-colors">
-          <Settings size={13} />
-          Prispôsobiť widgety
-        </button>
       </div>
 
       {/* ── Configurable widgets ──────────────────────────────────────────── */}
+      <div className="flex items-center justify-between px-1">
+        <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Widgety</span>
+        <button onClick={() => setShowCustomizer(true)} className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+          <Settings2 size={12} />
+          Prispôsobiť
+        </button>
+      </div>
       {safeWidgets.map(id => renderWidget(id))}
     </div>
   )

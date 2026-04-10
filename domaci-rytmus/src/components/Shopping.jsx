@@ -35,6 +35,7 @@ function ShoppingList() {
   const [showForm, setShowForm] = useState(false)
   const [expandedCategories, setExpandedCategories] = useLocalStorage('shopping-expanded', {})
   const [showDone, setShowDone] = useLocalStorage('shopping-show-done', true)
+  const [confirmDelete, setConfirmDelete] = useState(null)
   const haptic = useHaptic()
   const { pushNotif } = useNotif()
   const hasFamily = members.length > 0
@@ -45,7 +46,11 @@ function ShoppingList() {
     if (!item?.done && hasFamily) pushNotif('shopping', '✅', 'Kúpené', item?.name || '')
     setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
   }
-  const deleteItem = (id) => { haptic.tap(); setItems(items.filter(i => i.id !== id)) }
+  const deleteItem = (id) => {
+    haptic.tap()
+    setItems(items.filter(i => i.id !== id))
+    setConfirmDelete(null)
+  }
   const clearDone = () => { haptic.tap(); setItems(items.filter(i => !i.done)) }
 
   const addItem = (name, cat = selectedCategory, qty = quantity) => {
@@ -166,12 +171,16 @@ function ShoppingList() {
                       {item.quantity > 1 && (
                         <span className="text-xs text-slate-400 font-medium">×{item.quantity}</span>
                       )}
-                      <button
-                        onClick={() => deleteItem(item.id)}
-                        className="text-slate-300 hover:text-red-400 transition-colors ml-1"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {confirmDelete === item.id ? (
+                        <div className="flex items-center gap-1 ml-1">
+                          <button onClick={() => deleteItem(item.id)} className="text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded-lg">Zmazať</button>
+                          <button onClick={() => setConfirmDelete(null)} className="text-slate-400 hover:text-slate-600 p-1"><X size={13} /></button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setConfirmDelete(item.id)} className="text-slate-300 hover:text-red-400 transition-colors ml-1">
+                          <Trash2 size={18} />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -214,9 +223,16 @@ function ShoppingList() {
                   {item.quantity > 1 && (
                     <span className="text-xs text-slate-300 font-medium">×{item.quantity}</span>
                   )}
-                  <button onClick={() => deleteItem(item.id)} className="text-slate-300 hover:text-red-400 transition-colors ml-1">
-                    <Trash2 size={14} />
-                  </button>
+                  {confirmDelete === item.id ? (
+                    <div className="flex items-center gap-1 ml-1">
+                      <button onClick={() => deleteItem(item.id)} className="text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded-lg">Zmazať</button>
+                      <button onClick={() => setConfirmDelete(null)} className="text-slate-400 hover:text-slate-600 p-1"><X size={13} /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setConfirmDelete(item.id)} className="text-slate-300 hover:text-red-400 transition-colors ml-1">
+                      <Trash2 size={18} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

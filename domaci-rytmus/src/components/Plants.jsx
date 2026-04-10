@@ -21,7 +21,7 @@ function getDaysSince(dateStr) {
 
 function getWaterStatus(plant) {
   const days = getDaysSince(plant.lastWatered)
-  if (days === null) return 'thirsty'
+  if (days === null) return 'new'
   const remaining = plant.intervalDays - days
   if (remaining <= 0) return 'thirsty'
   if (remaining <= 1) return 'soon'
@@ -29,6 +29,7 @@ function getWaterStatus(plant) {
 }
 
 const STATUS = {
+  new:     { label: 'Nová', bg: 'bg-slate-50 dark:bg-slate-700', text: 'text-slate-500 dark:text-slate-400', border: 'border-slate-200 dark:border-slate-600', barColor: 'bg-slate-300' },
   thirsty: { label: 'Smädná', bg: 'bg-red-50 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', border: 'border-red-200 dark:border-red-800', barColor: 'bg-red-400' },
   soon:    { label: 'Čoskoro', bg: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800', barColor: 'bg-amber-400' },
   ok:      { label: 'Napojená', bg: 'bg-cyan-50 dark:bg-cyan-900/30', text: 'text-cyan-700 dark:text-cyan-400', border: 'border-cyan-200 dark:border-cyan-800', barColor: 'bg-cyan-400' },
@@ -42,6 +43,7 @@ export default function Plants() {
   const [interval, setInterval] = useState('7')
   const [location, setLocation] = useState('')
   const [justWatered, setJustWatered] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null)
   const { addEvent } = useHistory()
   const { pushNotif } = useNotif()
   const haptic = useHaptic()
@@ -58,7 +60,11 @@ export default function Plants() {
     setTimeout(() => setJustWatered(null), 1200)
   }
 
-  const deletePlant = (id) => { haptic.tap(); setPlants(plants.filter(p => p.id !== id)) }
+  const deletePlant = (id) => {
+    haptic.tap()
+    setPlants(plants.filter(p => p.id !== id))
+    setConfirmDelete(null)
+  }
 
   const addPlant = (e) => {
     e.preventDefault()
@@ -150,9 +156,16 @@ export default function Plants() {
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.bg} ${cfg.text}`}>
                           {cfg.label}
                         </span>
-                        <button onClick={() => deletePlant(plant.id)} className="text-slate-300 hover:text-red-400 transition-colors">
-                          <Trash2 size={15} />
-                        </button>
+                        {confirmDelete === plant.id ? (
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => deletePlant(plant.id)} className="text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded-lg">Zmazať</button>
+                            <button onClick={() => setConfirmDelete(null)} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={13} /></button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setConfirmDelete(plant.id)} className="text-slate-300 hover:text-red-400 transition-colors">
+                            <Trash2 size={18} />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -185,11 +198,13 @@ export default function Plants() {
                       ? 'bg-emerald-500 text-white'
                       : status === 'thirsty'
                         ? 'bg-cyan-500 hover:bg-cyan-600 text-white'
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300'
+                        : status === 'new'
+                          ? 'bg-cyan-100 dark:bg-cyan-900/40 hover:bg-cyan-200 dark:hover:bg-cyan-800 text-cyan-700 dark:text-cyan-300'
+                          : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300'
                   }`}
                 >
                   <Droplets size={16} />
-                  {isWatered ? 'Zaliata ✓' : status === 'thirsty' ? 'Zaliať teraz' : 'Zaliať'}
+                  {isWatered ? 'Zaliata ✓' : status === 'thirsty' ? 'Zaliať teraz' : status === 'new' ? 'Prvé zalievanie' : 'Zaliať'}
                 </button>
               </div>
             </div>
@@ -197,10 +212,16 @@ export default function Plants() {
         })}
 
         {plants.length === 0 && (
-          <div className="text-center py-12 text-slate-400 dark:text-slate-500">
-            <span className="text-5xl block mb-3">🪴</span>
-            <div className="font-medium">Žiadne rastliny</div>
-            <div className="text-sm mt-1">Pridaj prvú rastlinu tlačidlom +</div>
+          <div className="text-center py-14 text-slate-400 dark:text-slate-500">
+            <span className="text-6xl block mb-4">🪴</span>
+            <div className="font-semibold text-slate-600 dark:text-slate-300 text-base">Žiadne rastliny</div>
+            <div className="text-sm mt-2 mb-6 max-w-xs mx-auto">Pridaj rastliny a aplikácia ti pripomenie, kedy ich treba polievať.</div>
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors active:scale-95 shadow-sm shadow-cyan-200 dark:shadow-cyan-900"
+            >
+              Pridať rastlinu
+            </button>
           </div>
         )}
       </div>
