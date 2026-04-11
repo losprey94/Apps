@@ -16,9 +16,16 @@ export default defineConfig({
         background_color: '#0f172a',
         display: 'standalone',
         orientation: 'portrait',
+        id: 'https://losprey94.github.io/Apps/',
         scope: 'https://losprey94.github.io/Apps/',
         start_url: 'https://losprey94.github.io/Apps/',
         lang: 'sk',
+        categories: ['lifestyle', 'productivity'],
+        screenshots: [
+          { src: 'screenshots/mobile-1.png', sizes: '390x844', type: 'image/png', form_factor: 'narrow', label: 'Domovská obrazovka' },
+          { src: 'screenshots/mobile-2.png', sizes: '390x844', type: 'image/png', form_factor: 'narrow', label: 'Úlohy a plány' },
+          { src: 'screenshots/mobile-3.png', sizes: '390x844', type: 'image/png', form_factor: 'narrow', label: 'Nákupný zoznam' },
+        ],
         icons: [
           { src: 'pwa-64x64.png',            sizes: '64x64',    type: 'image/png' },
           { src: 'pwa-192x192.png',           sizes: '192x192',  type: 'image/png' },
