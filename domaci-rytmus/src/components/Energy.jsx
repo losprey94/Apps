@@ -88,7 +88,7 @@ export default function Energy() {
                     {latest ? (
                       <div className="text-xs text-slate-400 mt-0.5">
                         Posledný: {formatDate(latest.date)}
-                        {daysSince !== null && ` (${daysSince}d)`}
+                        {daysSince !== null && ` (${daysSince === 0 ? 'dnes' : `${daysSince}d`})`}
                       </div>
                     ) : (
                       <div className="text-xs text-slate-400 mt-0.5">Žiadne záznamy</div>

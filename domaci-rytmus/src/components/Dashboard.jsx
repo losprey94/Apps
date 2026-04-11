@@ -35,7 +35,8 @@ function getTaskStatus(t) {
 }
 function getPlantStatus(p) {
   const d = getDaysSince(p.lastWatered)
-  if (d === null || !p.intervalDays) return 'thirsty'
+  if (d === null) return 'new'      // nikdy nezaliata — nie je urgentná
+  if (!p.intervalDays) return 'ok'
   return p.intervalDays - d <= 0 ? 'thirsty' : p.intervalDays - d <= 1 ? 'soon' : 'ok'
 }
 function filterPeriod(expenses, period) {
