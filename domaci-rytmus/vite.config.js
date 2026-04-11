@@ -21,6 +21,7 @@ export default defineConfig({
         start_url: 'https://losprey94.github.io/Apps/',
         lang: 'sk',
         categories: ['lifestyle', 'productivity'],
+        prefer_related_applications: false,
         screenshots: [
           { src: 'screenshots/mobile-1.png', sizes: '1206x2437', type: 'image/jpeg', form_factor: 'narrow', label: 'Domovská obrazovka' },
           { src: 'screenshots/mobile-2.png', sizes: '1206x2461', type: 'image/jpeg', form_factor: 'narrow', label: 'Prehľad domácnosti' },
