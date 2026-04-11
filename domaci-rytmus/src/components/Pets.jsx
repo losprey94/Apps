@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { Plus, Trash2, X, Calendar, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
+import { Plus, Trash2, X, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useHistory } from '../hooks/useHistory'
+
+const INPUT_CLS = 'w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400'
 
 const PET_EMOJIS = ['🐶','🐱','🐰','🐹','🐦','🐠','🐍','🦜','🐢','🐓','🐈','🦮']
 
@@ -42,6 +44,10 @@ export default function Pets() {
   const [showAddPet, setShowAddPet] = useState(false)
   const [showAddEvent, setShowAddEvent] = useState(null) // petId
   const [expandedPet, setExpandedPet] = useLocalStorage('expanded-pet', null)
+  const [confirmDeletePet, setConfirmDeletePet] = useState(null)
+  const [confirmDeleteEvent, setConfirmDeleteEvent] = useState(null)
+  const [showAllEvents, setShowAllEvents] = useState({})   // { [petId]: true }
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false)
 
   const [petName, setPetName] = useState('')
   const [petEmoji, setPetEmoji] = useState('🐶')
@@ -64,6 +70,7 @@ export default function Pets() {
   const deletePet = (id) => {
     setPets(pets.filter(p => p.id !== id))
     setEvents(events.filter(e => e.petId !== id))
+    setConfirmDeletePet(null)
   }
 
   const addPetEvent = (e) => {
@@ -77,7 +84,7 @@ export default function Pets() {
     setShowAddEvent(null)
   }
 
-  const deleteEvent = (id) => setEvents(events.filter(e => e.id !== id))
+  const deleteEvent = (id) => { setEvents(events.filter(e => e.id !== id)); setConfirmDeleteEvent(null) }
 
   const upcomingEvents = events
     .filter(e => e.nextDate)
@@ -94,7 +101,7 @@ export default function Pets() {
             <AlertCircle size={15} className="text-amber-500" />
             <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Nadchádzajúce udalosti</span>
           </div>
-          {upcomingEvents.slice(0, 3).map(e => {
+          {(showAllUpcoming ? upcomingEvents : upcomingEvents.slice(0, 3)).map(e => {
             const evtType = EVENT_TYPES.find(t => t.id === e.type)
             return (
               <div key={e.id} className="flex items-center gap-3 px-4 py-3 border-b border-slate-50 dark:border-slate-700/50 last:border-0">
@@ -104,15 +111,22 @@ export default function Pets() {
                   <div className="text-xs text-slate-400">{formatDate(e.nextDate)}</div>
                 </div>
                 <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                  e.daysUntil <= 0 ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' :
+                  e.daysUntil < 0  ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' :
+                  e.daysUntil === 0 ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' :
                   e.daysUntil <= 7 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' :
                   'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
                 }`}>
-                  {e.daysUntil <= 0 ? 'Dnes!' : `za ${e.daysUntil}d`}
+                  {e.daysUntil < 0 ? `Meškáš ${Math.abs(e.daysUntil)}d` : e.daysUntil === 0 ? 'Dnes!' : `za ${e.daysUntil}d`}
                 </span>
               </div>
             )
           })}
+          {upcomingEvents.length > 3 && (
+            <button onClick={() => setShowAllUpcoming(v => !v)}
+              className="w-full py-2.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors border-t border-slate-100 dark:border-slate-700">
+              {showAllUpcoming ? 'Zobraziť menej' : `Zobraziť všetky (${upcomingEvents.length})`}
+            </button>
+          )}
         </div>
       )}
 
@@ -132,7 +146,12 @@ export default function Pets() {
       {pets.map(pet => {
         const petEvts = events.filter(e => e.petId === pet.id).sort((a, b) => new Date(b.date) - new Date(a.date))
         const isExpanded = expandedPet === pet.id
-        const age = pet.birthDate ? Math.floor(getDaysSince(pet.birthDate) / 365) : null
+        const ageDays = pet.birthDate ? getDaysSince(pet.birthDate) : null
+        const age = ageDays !== null
+          ? ageDays < 30  ? `${ageDays}d`
+          : ageDays < 365 ? `${Math.floor(ageDays / 30)}m`
+          : `${Math.floor(ageDays / 365)}r`
+          : null
 
         return (
           <div key={pet.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
@@ -141,7 +160,7 @@ export default function Pets() {
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-slate-800 dark:text-slate-200">{pet.name}</div>
                 <div className="text-xs text-slate-400 mt-0.5">
-                  {[pet.species, age !== null ? `${age} rokov` : null].filter(Boolean).join(' · ')}
+                  {[pet.species, age !== null ? age : null].filter(Boolean).join(' · ')}
                 </div>
                 <div className="text-xs text-slate-400">{petEvts.length} udalostí</div>
               </div>
@@ -158,9 +177,16 @@ export default function Pets() {
                 >
                   {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 </button>
-                <button onClick={() => deletePet(pet.id)} className="text-slate-300 hover:text-red-400 transition-colors">
-                  <Trash2 size={15} />
-                </button>
+                {confirmDeletePet === pet.id ? (
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => deletePet(pet.id)} className="text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded-lg">Zmazať</button>
+                    <button onClick={() => setConfirmDeletePet(null)} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={13} /></button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmDeletePet(pet.id)} className="text-slate-300 hover:text-red-400 transition-colors">
+                    <Trash2 size={15} />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -169,27 +195,44 @@ export default function Pets() {
                 {petEvts.length === 0 ? (
                   <div className="px-4 py-4 text-sm text-slate-400 text-center">Zatiaľ žiadne udalosti</div>
                 ) : (
-                  petEvts.slice(0, 5).map(evt => {
-                    const et = EVENT_TYPES.find(t => t.id === evt.type)
-                    return (
-                      <div key={evt.id} className="flex items-start gap-3 px-4 py-3 border-b border-slate-50 dark:border-slate-700/50 last:border-0">
-                        <span className="text-base mt-0.5">{et?.icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-slate-700 dark:text-slate-300">{et?.label}</div>
-                          <div className="text-xs text-slate-400">{formatDate(evt.date)}</div>
-                          {evt.nextDate && (
-                            <div className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                              Ďalší: {formatDate(evt.nextDate)}
+                  <>
+                    {(showAllEvents[pet.id] ? petEvts : petEvts.slice(0, 5)).map(evt => {
+                      const et = EVENT_TYPES.find(t => t.id === evt.type)
+                      return (
+                        <div key={evt.id} className="flex items-start gap-3 px-4 py-3 border-b border-slate-50 dark:border-slate-700/50 last:border-0">
+                          <span className="text-base mt-0.5">{et?.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-slate-700 dark:text-slate-300">{et?.label}</div>
+                            <div className="text-xs text-slate-400">{formatDate(evt.date)}</div>
+                            {evt.nextDate && (
+                              <div className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                                Ďalší: {formatDate(evt.nextDate)}
+                              </div>
+                            )}
+                            {evt.notes && <div className="text-xs text-slate-500 mt-0.5 italic">{evt.notes}</div>}
+                          </div>
+                          {confirmDeleteEvent === evt.id ? (
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <button onClick={() => deleteEvent(evt.id)} className="text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded-lg">Zmazať</button>
+                              <button onClick={() => setConfirmDeleteEvent(null)} className="text-slate-400 p-0.5"><X size={12} /></button>
                             </div>
+                          ) : (
+                            <button onClick={() => setConfirmDeleteEvent(evt.id)} className="text-slate-300 hover:text-red-400 transition-colors flex-shrink-0">
+                              <Trash2 size={13} />
+                            </button>
                           )}
-                          {evt.notes && <div className="text-xs text-slate-500 mt-0.5 italic">{evt.notes}</div>}
                         </div>
-                        <button onClick={() => deleteEvent(evt.id)} className="text-slate-300 hover:text-red-400 transition-colors">
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    )
-                  })
+                      )
+                    })}
+                    {petEvts.length > 5 && (
+                      <button
+                        onClick={() => setShowAllEvents(prev => ({ ...prev, [pet.id]: !prev[pet.id] }))}
+                        className="w-full py-2.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors border-t border-slate-100 dark:border-slate-700"
+                      >
+                        {showAllEvents[pet.id] ? 'Zobraziť menej' : `Zobraziť všetky (${petEvts.length})`}
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -222,9 +265,9 @@ export default function Pets() {
               ))}
             </div>
             <input autoFocus type="text" placeholder="Meno..." value={petName} onChange={e => setPetName(e.target.value)}
-              className="input-base" />
+              className={INPUT_CLS} />
             <input type="text" placeholder="Druh (napr. Labrador, Perzská mačka...)" value={petSpecies} onChange={e => setPetSpecies(e.target.value)}
-              className="input-base" />
+              className={INPUT_CLS} />
             <div className="flex items-center gap-3">
               <label className="text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">Dátum narodenia</label>
               <input type="date" value={petBirth} onChange={e => setPetBirth(e.target.value)}
