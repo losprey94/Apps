@@ -34,7 +34,7 @@ export function useFamilyNotifications(uid, displayName) {
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification(`${n.icon} ${n.action}`, {
           body: `${n.itemName}${n.byName ? ` · ${n.byName}` : ''}`,
-          icon: './icon-192.png',
+          icon: './pwa-192x192.png',
           tag: `fam-${n.id}`,
         })
       }
