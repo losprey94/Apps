@@ -53,16 +53,26 @@ const MOTIVATIONAL_QUOTES = [
   'Starostlivosť o domov je starostlivosť o seba.',
 ]
 
-function Section({ title, icon: Icon, children }) {
+function Section({ title, icon: Icon, badge, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen)
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-        <Icon size={16} className="text-slate-500 dark:text-slate-400" />
-        <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">{title}</span>
-      </div>
-      <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
-        {children}
-      </div>
+      <button
+        className="w-full flex items-center gap-2.5 px-4 py-3.5 text-left"
+        onClick={() => setOpen(v => !v)}
+      >
+        <Icon size={16} className="text-slate-500 dark:text-slate-400 flex-shrink-0" />
+        <span className="flex-1 font-semibold text-sm text-slate-700 dark:text-slate-300">{title}</span>
+        {badge && <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full mr-1">{badge}</span>}
+        {open
+          ? <ChevronUp size={14} className="text-slate-400 flex-shrink-0" />
+          : <ChevronDown size={14} className="text-slate-400 flex-shrink-0" />}
+      </button>
+      {open && (
+        <div className="border-t border-slate-100 dark:border-slate-700 divide-y divide-slate-50 dark:divide-slate-700/50">
+          {children}
+        </div>
+      )}
     </div>
   )
 }
@@ -108,6 +118,7 @@ export default function Settings() {
   const [defaultTaskInterval, setDefaultTaskInterval] = useLocalStorage('default-task-interval', 30)
   const [defaultPlantInterval, setDefaultPlantInterval] = useLocalStorage('default-plant-interval', 7)
   const [showQuotes, setShowQuotes] = useLocalStorage('show-quotes', true)
+  const [hapticEnabled, setHapticEnabled] = useLocalStorage('haptic-enabled', true)
   const [currency, setCurrency] = useLocalStorage('currency', 'EUR')
   const [navIds, setNavIds] = useSyncedStorage('nav-tabs', DEFAULT_NAV)
   const [dashWidgets, setDashWidgets] = useLocalStorage('dashboard-widgets', DEFAULT_WIDGETS)
@@ -169,12 +180,22 @@ export default function Settings() {
   }
 
   const exportData = () => {
+    const get = key => { try { return JSON.parse(localStorage.getItem(key) || 'null') } catch { return null } }
     const data = {
-      version: '1.0',
+      version: '2.0',
       exportDate: new Date().toISOString(),
-      tasks: JSON.parse(localStorage.getItem('tasks') || '[]'),
-      plants: JSON.parse(localStorage.getItem('plants') || '[]'),
-      shopping: JSON.parse(localStorage.getItem('shopping') || '[]'),
+      tasks:           get('tasks')           || [],
+      plants:          get('plants')          || [],
+      shopping:        get('shopping')        || [],
+      contacts:        get('contacts')        || [],
+      budgetConfig:    get('budget-config')   || {},
+      budgetExpenses:  get('budget-expenses') || [],
+      budgetRecurring: get('budget-recurring')|| [],
+      energyReadings:  get('energy-readings') || [],
+      mealPlan:        get('meal-plan')       || {},
+      pets:            get('pets')            || [],
+      petEvents:       get('pet-events')      || [],
+      loyaltyCards:    get('loyalty-cards')   || [],
     }
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -196,9 +217,16 @@ export default function Settings() {
     reader.onload = (ev) => {
       try {
         const data = JSON.parse(ev.target.result)
-        if (data.tasks) localStorage.setItem('tasks', JSON.stringify(data.tasks))
-        if (data.plants) localStorage.setItem('plants', JSON.stringify(data.plants))
-        if (data.shopping) localStorage.setItem('shopping', JSON.stringify(data.shopping))
+        const map = {
+          tasks: 'tasks', plants: 'plants', shopping: 'shopping',
+          contacts: 'contacts',
+          budgetConfig: 'budget-config', budgetExpenses: 'budget-expenses', budgetRecurring: 'budget-recurring',
+          energyReadings: 'energy-readings', mealPlan: 'meal-plan',
+          pets: 'pets', petEvents: 'pet-events', loyaltyCards: 'loyalty-cards',
+        }
+        for (const [key, lsKey] of Object.entries(map)) {
+          if (data[key] != null) localStorage.setItem(lsKey, JSON.stringify(data[key]))
+        }
         window.location.reload()
       } catch {
         setImportError('Neplatný súbor. Skontroluj formát.')
@@ -224,7 +252,8 @@ export default function Settings() {
     setEditingName(false)
   }
 
-  const totalItems = tasks.length + plants.length + shopping.filter(i => !i.done).length
+  const [contacts] = useLocalStorage('contacts', [])
+  const totalItems = tasks.length + plants.length + shopping.filter(i => !i.done).length + contacts.length
 
   return (
     <div className="flex flex-col gap-4 animate-fade-in pb-4">
@@ -310,9 +339,12 @@ export default function Settings() {
       </Section>
 
       {/* Appearance */}
-      <Section title={t('settings.appearance')} icon={Palette}>
+      <Section title={t('settings.appearance')} icon={Palette} defaultOpen>
         <Row label={t('settings.darkMode')} sublabel={darkMode ? t('settings.darkOn') : t('settings.darkOff')}>
           <Toggle value={darkMode} onChange={setDarkMode} />
+        </Row>
+        <Row label="Haptická odozva" sublabel="Vibrácie pri akciách (mobil)">
+          <Toggle value={hapticEnabled !== false} onChange={v => setHapticEnabled(v)} />
         </Row>
         <Row label={t('settings.quotes')} sublabel={t('settings.quotesHint')}>
           <Toggle value={showQuotes} onChange={setShowQuotes} />
@@ -416,12 +448,7 @@ export default function Settings() {
       </Section>
 
       {/* Nav customizer */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-          <Navigation2 size={16} className="text-slate-500 dark:text-slate-400" />
-          <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">{t('settings.navBar')}</span>
-          <span className="ml-auto text-xs text-slate-400">{safeNavIds.length}/{MAX_NAV}</span>
-        </div>
+      <Section title={t('settings.navBar')} icon={Navigation2} badge={`${safeNavIds.length}/${MAX_NAV}`}>
         <div className="p-3 flex flex-col gap-1.5">
           <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-0.5">{t('settings.inBar')}</div>
           {safeNavIds.map((id, idx) => {
@@ -465,15 +492,10 @@ export default function Settings() {
             })}
           </div>
         )}
-      </div>
+      </Section>
 
       {/* Dashboard customizer */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-          <LayoutDashboard size={16} className="text-slate-500 dark:text-slate-400" />
-          <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">Dashboard</span>
-          <span className="ml-auto text-xs text-slate-400">{safeDash.length}/{WIDGET_DEFS.length} {t('settings.widgets')}</span>
-        </div>
+      <Section title="Dashboard" icon={LayoutDashboard} badge={`${safeDash.length}/${WIDGET_DEFS.length} ${t('settings.widgets')}`}>
         <div className="p-3 flex flex-col gap-1.5">
           <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 mb-0.5">{t('settings.visible')}</div>
           {safeDash.map((id, idx) => {
@@ -514,7 +536,7 @@ export default function Settings() {
             ))}
           </div>
         )}
-      </div>
+      </Section>
 
       {/* Defaults */}
       <Section title={t('settings.defaults')} icon={RefreshCw}>

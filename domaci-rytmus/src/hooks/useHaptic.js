@@ -1,6 +1,9 @@
 export function useHaptic() {
   const vibe = (pattern) => {
-    try { if (navigator?.vibrate) navigator.vibrate(pattern) } catch {}
+    try {
+      if (localStorage.getItem('haptic-enabled') === 'false') return
+      if (navigator?.vibrate) navigator.vibrate(pattern)
+    } catch {}
   }
   return {
     tap:     () => vibe(8),
