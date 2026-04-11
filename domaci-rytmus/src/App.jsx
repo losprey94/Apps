@@ -1,19 +1,22 @@
-import { CheckSquare, Leaf, ShoppingCart, Home } from 'lucide-react'
+import { CheckSquare, Leaf, ShoppingCart, Home, UtensilsCrossed } from 'lucide-react'
 import Tasks from './components/Tasks'
 import Plants from './components/Plants'
 import Shopping from './components/Shopping'
+import MealPlan from './components/MealPlan'
 import { useLocalStorage } from './hooks/useLocalStorage'
 
 const TABS = [
   { id: 'tasks', label: 'Úlohy', icon: CheckSquare, component: Tasks, color: 'indigo' },
   { id: 'plants', label: 'Rastliny', icon: Leaf, component: Plants, color: 'cyan' },
   { id: 'shopping', label: 'Nákup', icon: ShoppingCart, component: Shopping, color: 'violet' },
+  { id: 'mealplan', label: 'Jedálniček', icon: UtensilsCrossed, component: MealPlan, color: 'orange' },
 ]
 
 const TAB_COLORS = {
   indigo: { active: 'text-indigo-600', bg: 'bg-indigo-50', indicator: 'bg-indigo-600' },
   cyan: { active: 'text-cyan-600', bg: 'bg-cyan-50', indicator: 'bg-cyan-500' },
   violet: { active: 'text-violet-600', bg: 'bg-violet-50', indicator: 'bg-violet-600' },
+  orange: { active: 'text-orange-500', bg: 'bg-orange-50', indicator: 'bg-orange-500' },
 }
 
 export default function App() {
