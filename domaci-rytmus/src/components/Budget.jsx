@@ -459,6 +459,19 @@ export default function Budget() {
   const totalPct   = totalSpent / safeTotalBudget
   const health     = healthColor(totalPct)
 
+  // Daily budget context
+  const now = new Date()
+  const daysInPeriod = safePeriod === 'monthly'
+    ? new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+    : 7
+  const dayOfPeriod = safePeriod === 'monthly'
+    ? now.getDate()
+    : ((now.getDay() + 6) % 7) + 1
+  const daysLeft   = Math.max(1, daysInPeriod - dayOfPeriod + 1)
+  const perDay     = remaining > 0 ? remaining / daysLeft : 0
+  const expectedSpent = (dayOfPeriod / daysInPeriod) * safeTotalBudget
+  const onTrack    = totalSpent <= expectedSpent + 0.01
+
   // Per-category spending
   const catSpending = useMemo(() => {
     const map = {}
@@ -571,6 +584,20 @@ export default function Budget() {
                   <div className="font-bold text-sm">{fmtEur(safeTotalBudget)}</div>
                 </div>
               </div>
+
+              {/* Daily context */}
+              {remaining > 0 && (
+                <div className="mt-3 pt-3 border-t border-white/15 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs text-white/60">Na deň zostatok</div>
+                    <div className="text-lg font-bold leading-tight">{fmtEur(perDay)}<span className="text-white/60 text-xs font-normal">/deň</span></div>
+                    <div className="text-xs text-white/50 mt-0.5">zostáva {daysLeft} {daysLeft === 1 ? 'deň' : daysLeft < 5 ? 'dni' : 'dní'}</div>
+                  </div>
+                  <div className={`text-xs font-semibold px-2.5 py-1.5 rounded-xl ${onTrack ? 'bg-white/20 text-white' : 'bg-red-400/40 text-red-100'}`}>
+                    {onTrack ? '✓ Míňaš OK' : '⚠ Míňaš rýchlo'}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

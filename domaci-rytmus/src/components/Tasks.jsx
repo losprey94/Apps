@@ -200,6 +200,25 @@ export default function Tasks() {
     setConfirmDelete(null)
   }
 
+  const snoozeTask = (id) => {
+    haptic.tap()
+    setTasks(prev => prev.map(t => {
+      if (t.id !== id) return t
+      if (t.deadline) {
+        const d = new Date(t.deadline + 'T00:00:00')
+        d.setDate(d.getDate() + 1)
+        return { ...t, deadline: d.toISOString().split('T')[0] }
+      }
+      if (t.repeating && t.intervalDays) {
+        // Give 1 more day: shift lastDone forward by 1 day
+        const base = t.lastDone ? new Date(t.lastDone) : new Date(Date.now() - t.intervalDays * 86400000)
+        base.setDate(base.getDate() + 1)
+        return { ...t, lastDone: base.toISOString() }
+      }
+      return t
+    }))
+  }
+
   const addTask = (e) => {
     e.preventDefault()
     if (!name.trim()) return
@@ -370,13 +389,24 @@ export default function Tasks() {
                   </div>
                 )}
 
-                <button
-                  onClick={() => markDone(task.id)}
-                  className={`mt-3 w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-2.5 rounded-xl transition-all active:scale-95 ${isDone ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}
-                >
-                  <CheckCircle2 size={16} />
-                  {isDone ? 'Hotovo ✓' : 'Hotovo'}
-                </button>
+                <div className="mt-3 flex gap-2">
+                  {(task.deadline || (task.repeating && getStatus(task) === 'overdue')) && !isDone && (
+                    <button
+                      onClick={() => snoozeTask(task.id)}
+                      title="Odložiť o 1 deň"
+                      className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-2.5 rounded-xl transition-colors active:scale-95 flex-shrink-0"
+                    >
+                      <Clock size={13} /> +1 deň
+                    </button>
+                  )}
+                  <button
+                    onClick={() => markDone(task.id)}
+                    className={`flex-1 flex items-center justify-center gap-2 text-white text-sm font-semibold py-2.5 rounded-xl transition-all active:scale-95 ${isDone ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                  >
+                    <CheckCircle2 size={16} />
+                    {isDone ? 'Hotovo ✓' : 'Hotovo'}
+                  </button>
+                </div>
               </div>
             </div>
           )
