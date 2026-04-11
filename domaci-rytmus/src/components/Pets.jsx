@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Plus, Trash2, X, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useSyncedStorage } from '../context/SyncContext'
 import { useHistory } from '../hooks/useHistory'
 
 const INPUT_CLS = 'w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400'
@@ -39,6 +40,9 @@ function formatDate(dateStr) {
 export default function Pets() {
   const [pets, setPets] = useLocalStorage('pets', [])
   const [events, setEvents] = useLocalStorage('pet-events', [])
+  const [tasks, setTasks] = useSyncedStorage('tasks', [])
+  const tasksRef = useRef(tasks)
+  useEffect(() => { tasksRef.current = tasks }, [tasks])
   const { addEvent } = useHistory()
 
   const [showAddPet, setShowAddPet] = useState(false)
@@ -91,6 +95,23 @@ export default function Pets() {
     .map(e => ({ ...e, daysUntil: getDaysUntil(e.nextDate), pet: pets.find(p => p.id === e.petId) }))
     .filter(e => e.daysUntil !== null && e.daysUntil <= 30)
     .sort((a, b) => a.daysUntil - b.daysUntil)
+
+  // Auto-create tasks for pet events due within 3 days
+  useEffect(() => {
+    const urgent = upcomingEvents.filter(e => e.daysUntil <= 3)
+    if (!urgent.length) return
+    const current = tasksRef.current
+    const newTasks = []
+    urgent.forEach((e, i) => {
+      const autoId = `pet-event-${e.id}`
+      if (!current.some(t => t.autoId === autoId && !t.done)) {
+        const pet = pets.find(p => p.id === e.petId)
+        const evtLabel = EVENT_TYPES.find(t => t.id === e.type)?.label || e.type
+        newTasks.push({ id: Date.now() + i, text: `🐾 ${evtLabel} – ${pet?.name || ''}`, done: false, deadline: e.nextDate, autoId })
+      }
+    })
+    if (newTasks.length) setTasks([...current, ...newTasks])
+  }, [events, pets]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex flex-col gap-4 animate-fade-in">

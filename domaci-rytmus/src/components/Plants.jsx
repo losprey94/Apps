@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Droplets, Plus, Trash2, Leaf, X } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useSyncedStorage } from '../context/SyncContext'
@@ -35,8 +35,16 @@ const STATUS = {
   ok:      { label: 'Napojená', bg: 'bg-cyan-50 dark:bg-cyan-900/30', text: 'text-cyan-700 dark:text-cyan-400', border: 'border-cyan-200 dark:border-cyan-800', barColor: 'bg-cyan-400' },
 }
 
+function getTodayStr() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
 export default function Plants() {
   const [plants, setPlants] = useSyncedStorage('plants', DEFAULT_PLANTS)
+  const [tasks, setTasks] = useSyncedStorage('tasks', [])
+  const tasksRef = useRef(tasks)
+  useEffect(() => { tasksRef.current = tasks }, [tasks])
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [emoji, setEmoji] = useState('🪴')
@@ -48,9 +56,26 @@ export default function Plants() {
   const { pushNotif } = useNotif()
   const haptic = useHaptic()
 
+  // Auto-create tasks for thirsty plants
+  useEffect(() => {
+    const thirsty = plants.filter(p => getWaterStatus(p) === 'thirsty')
+    if (!thirsty.length) return
+    const current = tasksRef.current
+    const today = getTodayStr()
+    const newTasks = []
+    thirsty.forEach((plant, i) => {
+      const autoId = `plant-water-${plant.id}`
+      if (!current.some(t => t.autoId === autoId && !t.done)) {
+        newTasks.push({ id: Date.now() + i, text: `🌿 Zaliať ${plant.name || plant.emoji}`, done: false, deadline: today, autoId })
+      }
+    })
+    if (newTasks.length) setTasks([...current, ...newTasks])
+  }, [plants]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const water = (id) => {
     const plant = plants.find(p => p.id === id)
     setPlants(plants.map(p => p.id === id ? { ...p, lastWatered: new Date().toISOString() } : p))
+    setTasks(tasks.map(t => t.autoId === `plant-water-${id}` ? { ...t, done: true } : t))
     if (plant) {
       addEvent('plants', plant.emoji, 'Zaliata', plant.name)
       pushNotif('plants', plant.emoji, 'Zaliata', plant.name)
@@ -65,6 +90,8 @@ export default function Plants() {
     if (!thirsty.length) return
     const now = new Date().toISOString()
     setPlants(plants.map(p => getWaterStatus(p) === 'thirsty' ? { ...p, lastWatered: now } : p))
+    const thirstyAutoIds = new Set(thirsty.map(p => `plant-water-${p.id}`))
+    setTasks(tasks.map(t => thirstyAutoIds.has(t.autoId) ? { ...t, done: true } : t))
     thirsty.forEach(p => {
       addEvent('plants', p.emoji, 'Zaliata', p.name)
       pushNotif('plants', p.emoji, 'Zaliata', p.name)
