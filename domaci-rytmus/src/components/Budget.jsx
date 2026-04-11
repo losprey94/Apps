@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { Plus, Trash2, X, Settings2, TrendingDown, TrendingUp, ChevronDown, ChevronRight, Wallet, Check } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { Plus, Trash2, X, Settings2, TrendingDown, TrendingUp, ChevronDown, ChevronRight, Wallet, Check, Repeat } from 'lucide-react'
 import { useSyncedStorage } from '../context/SyncContext'
 import { useCurrency } from '../hooks/useCurrency'
 
@@ -228,21 +228,27 @@ function SetupModal({ config, onSave, onClose }) {
 }
 
 // ─── Add expense modal ────────────────────────────────────────────────────────
-function AddExpenseModal({ categories, onAdd, onClose }) {
+function AddExpenseModal({ categories, onAdd, onAddRecurring, onClose }) {
   const safeCategories = Array.isArray(categories) && categories.length > 0 ? categories : DEFAULT_CATEGORIES
-  const [amount, setAmount]     = useState('')
-  const [catId, setCatId]       = useState(safeCategories[0].id)
-  const [note, setNote]         = useState('')
-  const [date, setDate]         = useState(new Date().toISOString().split('T')[0])
-  const [done, setDone]         = useState(false)
+  const [amount, setAmount]       = useState('')
+  const [catId, setCatId]         = useState(safeCategories[0].id)
+  const [note, setNote]           = useState('')
+  const [date, setDate]           = useState(new Date().toISOString().split('T')[0])
+  const [done, setDone]           = useState(false)
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [dayOfMonth, setDayOfMonth]   = useState(1)
 
   const submit = (e) => {
     e.preventDefault()
     const val = parseFloat(amount.replace(',', '.'))
     if (!val || val <= 0) return
-    onAdd({ id: Date.now(), amount: val, categoryId: catId, note: note.trim(), date })
+    if (isRecurring) {
+      onAddRecurring({ id: Date.now(), amount: val, categoryId: catId, note: note.trim(), dayOfMonth, active: true, lastApplied: null })
+    } else {
+      onAdd({ id: Date.now(), amount: val, categoryId: catId, note: note.trim(), date })
+    }
     setDone(true)
-    setTimeout(() => { setAmount(''); setNote(''); setDone(false) }, 600)
+    setTimeout(() => { setAmount(''); setNote(''); setDone(false); if (isRecurring) onClose() }, 700)
   }
 
   return (
@@ -269,6 +275,49 @@ function AddExpenseModal({ categories, onAdd, onClose }) {
               required
             />
           </div>
+
+          {/* Recurring toggle */}
+          <button
+            type="button"
+            onClick={() => setIsRecurring(v => !v)}
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
+              isRecurring
+                ? 'bg-violet-50 dark:bg-violet-900/30 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300'
+                : 'bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400'
+            }`}
+          >
+            <Repeat size={15} />
+            {isRecurring ? 'Opakujúci výdavok' : 'Jednorazový výdavok'}
+            <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${isRecurring ? 'bg-violet-200 dark:bg-violet-800 text-violet-700 dark:text-violet-300' : 'bg-slate-200 dark:bg-slate-600 text-slate-500'}`}>
+              {isRecurring ? 'každý mesiac' : 'raz'}
+            </span>
+          </button>
+
+          {/* Day of month picker (when recurring) */}
+          {isRecurring && (
+            <div>
+              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 block">
+                Deň v mesiaci, kedy sa účtuje
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {[1,5,10,15,20,25,28].map(d => (
+                  <button key={d} type="button" onClick={() => setDayOfMonth(d)}
+                    className={`w-10 h-10 rounded-xl text-sm font-bold border transition-all ${
+                      dayOfMonth === d
+                        ? 'bg-violet-600 border-transparent text-white'
+                        : 'bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400'
+                    }`}>{d}.</button>
+                ))}
+                <input
+                  type="number" min="1" max="28"
+                  value={dayOfMonth}
+                  onChange={e => setDayOfMonth(Math.max(1, Math.min(28, parseInt(e.target.value) || 1)))}
+                  className="w-16 h-10 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-center focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  placeholder="iný"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Category grid */}
           <div>
@@ -302,17 +351,19 @@ function AddExpenseModal({ categories, onAdd, onClose }) {
               onChange={e => setNote(e.target.value)}
               className="flex-1 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
-            <input
-              type="date"
-              value={date}
-              onChange={e => setDate(e.target.value)}
-              className="border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            />
+            {!isRecurring && (
+              <input
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                className="border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+            )}
           </div>
 
           <button type="submit"
-            className={`w-full flex items-center justify-center gap-2 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 ${done ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
-            {done ? <><Check size={18} /> Pridané!</> : <><Plus size={18} /> Pridať výdavok</>}
+            className={`w-full flex items-center justify-center gap-2 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 ${done ? 'bg-emerald-500' : isRecurring ? 'bg-violet-600 hover:bg-violet-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+            {done ? <><Check size={18} /> {isRecurring ? 'Uložené!' : 'Pridané!'}</> : isRecurring ? <><Repeat size={18} /> Uložiť opakujúci</> : <><Plus size={18} /> Pridať výdavok</>}
           </button>
         </form>
       </div>
@@ -330,11 +381,44 @@ export default function Budget() {
     categories: DEFAULT_CATEGORIES,
   })
   const [expenses, setExpenses] = useSyncedStorage('budget-expenses', [])
+  const [recurringExpenses, setRecurringExpenses] = useSyncedStorage('budget-recurring', [])
 
   const [showSetup, setShowSetup]   = useState(false)
   const [showAdd, setShowAdd]       = useState(false)
   const [showAllExp, setShowAllExp] = useState(false)
   const [expandedCats, setExpandedCats] = useState({})
+
+  // Auto-apply recurring expenses when they're due this month
+  useEffect(() => {
+    if (!recurringExpenses?.length) return
+    const today = new Date()
+    const todayDay = today.getDate()
+    const periodKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+
+    const toApply = []
+    let changed = false
+    const updated = recurringExpenses.map(r => {
+      if (!r.active || r.lastApplied === periodKey || todayDay < r.dayOfMonth) return r
+      const year  = today.getFullYear()
+      const month = String(today.getMonth() + 1).padStart(2, '0')
+      const day   = String(r.dayOfMonth).padStart(2, '0')
+      toApply.push({
+        id: Date.now() + toApply.length,
+        amount: r.amount,
+        categoryId: r.categoryId,
+        note: r.note,
+        date: `${year}-${month}-${day}`,
+        recurringId: r.id,
+      })
+      changed = true
+      return { ...r, lastApplied: periodKey }
+    })
+
+    if (changed) {
+      setExpenses(prev => [...toApply, ...(prev || [])])
+      setRecurringExpenses(updated)
+    }
+  }, [recurringExpenses]) // eslint-disable-line
 
   const { period, totalBudget, categories } = config || {}
   const safeCategories = Array.isArray(categories) && categories.length > 0
@@ -378,6 +462,15 @@ export default function Budget() {
   const addExpense = (expense) => setExpenses(prev => [expense, ...prev])
   const deleteExpense = (id) => setExpenses(prev => prev.filter(e => e.id !== id))
 
+  const addRecurring   = (r) => setRecurringExpenses(prev => [...(prev || []), r])
+  const deleteRecurring = (id) => {
+    setRecurringExpenses(prev => prev.filter(r => r.id !== id))
+    // also remove any auto-applied expenses from this recurring in current period
+    setExpenses(prev => prev.filter(e => e.recurringId !== id))
+  }
+  const toggleRecurring = (id) =>
+    setRecurringExpenses(prev => prev.map(r => r.id === id ? { ...r, active: !r.active } : r))
+
   const getCat = (id) => safeCategories.find(c => c.id === id) || { name: 'Ostatné', emoji: '💰', color: '#64748b' }
 
   return (
@@ -393,6 +486,7 @@ export default function Budget() {
         <AddExpenseModal
           categories={safeCategories}
           onAdd={addExpense}
+          onAddRecurring={addRecurring}
           onClose={() => setShowAdd(false)}
         />
       )}
@@ -560,6 +654,53 @@ export default function Budget() {
           </div>
         </div>
 
+        {/* ── Recurring expenses ──────────────────────────────────────────── */}
+        {recurringExpenses && recurringExpenses.length > 0 && (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+              <div className="flex items-center gap-2">
+                <Repeat size={14} className="text-violet-500" />
+                <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">Pravidelné výdavky</span>
+              </div>
+              <span className="text-xs text-slate-400">{fmtEur(recurringExpenses.filter(r => r.active).reduce((s, r) => s + r.amount, 0))}/mes.</span>
+            </div>
+            <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
+              {recurringExpenses.map(r => {
+                const cat = getCat(r.categoryId)
+                return (
+                  <div key={r.id} className="flex items-center gap-3 px-4 py-3">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                      style={{ backgroundColor: cat.color + '18' }}>
+                      {cat.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">
+                        {r.note || cat.name}
+                      </div>
+                      <div className="text-xs text-slate-400 mt-0.5">
+                        {cat.name} · každý {r.dayOfMonth}. v mesiaci
+                      </div>
+                    </div>
+                    <div className="text-sm font-bold text-slate-800 dark:text-slate-200 flex-shrink-0 mr-1">
+                      {fmtEur(r.amount)}
+                    </div>
+                    <button
+                      onClick={() => toggleRecurring(r.id)}
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${r.active ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'}`}
+                      title={r.active ? 'Vypnúť' : 'Zapnúť'}
+                    >
+                      <Repeat size={14} />
+                    </button>
+                    <button onClick={() => deleteRecurring(r.id)} className="text-slate-300 hover:text-red-400 transition-colors">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* ── Expense log ─────────────────────────────────────────────────── */}
         {periodExpenses.length > 0 && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
@@ -585,8 +726,11 @@ export default function Budget() {
                         {cat.emoji}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
-                          {e.note || cat.name}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+                            {e.note || cat.name}
+                          </span>
+                          {e.recurringId && <Repeat size={11} className="text-violet-400 flex-shrink-0" />}
                         </div>
                         <div className="text-xs text-slate-400">{cat.name}</div>
                       </div>
