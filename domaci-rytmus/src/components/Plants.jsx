@@ -60,6 +60,20 @@ export default function Plants() {
     setTimeout(() => setJustWatered(null), 1200)
   }
 
+  const waterAll = () => {
+    const thirsty = plants.filter(p => getWaterStatus(p) === 'thirsty')
+    if (!thirsty.length) return
+    const now = new Date().toISOString()
+    setPlants(plants.map(p => getWaterStatus(p) === 'thirsty' ? { ...p, lastWatered: now } : p))
+    thirsty.forEach(p => {
+      addEvent('plants', p.emoji, 'Zaliata', p.name)
+      pushNotif('plants', p.emoji, 'Zaliata', p.name)
+    })
+    haptic.done()
+    setJustWatered('all')
+    setTimeout(() => setJustWatered(null), 1500)
+  }
+
   const deletePlant = (id) => {
     haptic.tap()
     setPlants(plants.filter(p => p.id !== id))
@@ -97,15 +111,28 @@ export default function Plants() {
       {/* Banner */}
       {thirstyCount > 0 && (
         <div className="bg-cyan-600 dark:bg-cyan-700 rounded-2xl p-4 flex items-center gap-3">
-          <div className="bg-white/20 rounded-xl p-2">
+          <div className="bg-white/20 rounded-xl p-2 flex-shrink-0">
             <Droplets size={22} className="text-white" />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <div className="font-semibold text-white text-sm">
               {thirstyCount} {thirstyCount === 1 ? 'rastlina potrebuje' : thirstyCount < 5 ? 'rastliny potrebujú' : 'rastlín potrebuje'} vodu
             </div>
             <div className="text-cyan-100 text-xs mt-0.5">Nezabúdaj na ne!</div>
           </div>
+          {thirstyCount > 1 && (
+            <button
+              onClick={waterAll}
+              className={`flex-shrink-0 flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-all active:scale-95 ${
+                justWatered === 'all'
+                  ? 'bg-white text-emerald-600'
+                  : 'bg-white/20 hover:bg-white/30 text-white'
+              }`}
+            >
+              <Droplets size={13} />
+              {justWatered === 'all' ? 'Zaliate ✓' : `Zaliať všetky`}
+            </button>
+          )}
         </div>
       )}
 
@@ -134,7 +161,7 @@ export default function Plants() {
           const cfg = STATUS[status]
           const days = getDaysSince(plant.lastWatered)
           const daysUntil = days !== null ? plant.intervalDays - days : null
-          const isWatered = justWatered === plant.id
+          const isWatered = justWatered === plant.id || (justWatered === 'all' && status === 'thirsty')
 
           return (
             <div key={plant.id} className={`bg-white dark:bg-slate-800 rounded-2xl border ${cfg.border} shadow-sm overflow-hidden ${isWatered ? 'animate-pop' : 'animate-fade-in'}`}>

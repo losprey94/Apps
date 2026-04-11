@@ -37,6 +37,7 @@ function ShoppingList() {
   const [showDone, setShowDone] = useLocalStorage('shopping-show-done', true)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [confirmClear, setConfirmClear] = useState(false)
+  const [history, setHistory] = useLocalStorage('shopping-history', [])
   const haptic = useHaptic()
   const { pushNotif } = useNotif()
   const hasFamily = members.length > 0
@@ -61,14 +62,20 @@ function ShoppingList() {
   const addItem = (name, cat = selectedCategory, qty = quantity) => {
     if (!name.trim()) return
     haptic.light()
+    const trimmed = name.trim()
     setItems([...items, {
       id: Date.now(),
-      name: name.trim(),
+      name: trimmed,
       category: cat,
       quantity: parseInt(qty) || 1,
       done: false,
     }])
-    if (hasFamily) pushNotif('shopping', '🛒', 'Pridané na nákup', name.trim())
+    // Remember for autocomplete — keep unique, newest first, max 150
+    setHistory(prev => {
+      const filtered = (prev || []).filter(h => h.toLowerCase() !== trimmed.toLowerCase())
+      return [trimmed, ...filtered].slice(0, 150)
+    })
+    if (hasFamily) pushNotif('shopping', '🛒', 'Pridané na nákup', trimmed)
     setInput('')
     setQuantity('1')
   }
@@ -93,6 +100,15 @@ function ShoppingList() {
   const suggestions = (SUGGESTIONS[selectedCategory] || []).filter(
     s => !items.some(i => i.name.toLowerCase() === s.toLowerCase())
   )
+
+  // Autocomplete: history matches when user is typing
+  const autoSuggestions = input.trim().length >= 2
+    ? [...(history || []), ...SUGGESTIONS[selectedCategory]]
+        .filter((s, idx, arr) => arr.findIndex(x => x.toLowerCase() === s.toLowerCase()) === idx) // deduplicate
+        .filter(s => s.toLowerCase().includes(input.toLowerCase()))
+        .filter(s => !items.some(i => i.name.toLowerCase() === s.toLowerCase()))
+        .slice(0, 6)
+    : []
 
   const progressPct = items.length > 0 ? Math.round((doneItems.length / items.length) * 100) : 0
 
@@ -321,7 +337,26 @@ function ShoppingList() {
               />
             </div>
 
-            {suggestions.length > 0 && (
+            {autoSuggestions.length > 0 ? (
+              <div>
+                <div className="text-xs text-slate-400 mb-1.5">Zhody:</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {autoSuggestions.map(s => {
+                    const fromHistory = (history || []).some(h => h.toLowerCase() === s.toLowerCase())
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => { setInput(s) }}
+                        className="text-xs bg-violet-50 dark:bg-violet-900/30 hover:bg-violet-100 dark:hover:bg-violet-900/60 text-violet-700 dark:text-violet-300 px-2.5 py-1 rounded-lg border border-violet-200 dark:border-violet-700 transition-colors flex items-center gap-1"
+                      >
+                        {fromHistory ? '🕐' : '+'} {s}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : suggestions.length > 0 && (
               <div>
                 <div className="text-xs text-slate-400 mb-1.5">Návrhy:</div>
                 <div className="flex flex-wrap gap-1.5">
