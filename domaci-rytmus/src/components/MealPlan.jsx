@@ -510,7 +510,8 @@ function RecipePicker({ onPick, onClose, savedRecipes, customRecipes, onSaveCust
 
 // ─── Day card ─────────────────────────────────────────────────────────────────
 function DayCard({ dateStr, dayIdx, group, mealPlan, onSetMeal, onClearMeal, savedRecipes, customRecipes, onSaveCustomRecipe, today }) {
-  const [picking, setPicking] = useState(null) // slot id being picked
+  const [picking, setPicking] = useState(null)
+  const [confirmClear, setConfirmClear] = useState(null) // slot id pending delete
   const dayPlan = mealPlan[dateStr]?.[group] || {}
   const filledCount = MEAL_SLOTS.filter(s => dayPlan[s.id]).length
   const isToday = dateStr === today
@@ -546,9 +547,16 @@ function DayCard({ dateStr, dayIdx, group, mealPlan, onSetMeal, onClearMeal, sav
                     : <span className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-base flex-shrink-0">{meal.emoji || '🍽️'}</span>
                   }
                   <span className="text-sm text-slate-700 dark:text-slate-300 flex-1 min-w-0 break-words leading-tight">{meal.name}</span>
-                  <button onClick={() => onClearMeal(dateStr, group, slot.id)} className="text-slate-300 hover:text-red-400 transition-colors flex-shrink-0 ml-1">
-                    <Trash2 size={14} />
-                  </button>
+                  {confirmClear === slot.id ? (
+                    <div className="flex items-center gap-1 flex-shrink-0 ml-1">
+                      <button onClick={() => { onClearMeal(dateStr, group, slot.id); setConfirmClear(null) }} className="text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded-lg">Zmazať</button>
+                      <button onClick={() => setConfirmClear(null)} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={13} /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setConfirmClear(slot.id)} className="text-slate-300 hover:text-red-400 transition-colors flex-shrink-0 ml-1">
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
               ) : (
                 <button
