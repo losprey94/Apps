@@ -162,8 +162,9 @@ export default function Tasks() {
   const [interval, setInterval]     = useState('30')
   const [deadline, setDeadline]     = useState('')
   const [assignedTo, setAssignedTo] = useState('')
-  const [justDone, setJustDone]     = useState(null)
-  const [dyingTask, setDyingTask]   = useState(null)
+  const [justDone, setJustDone]       = useState(null)
+  const [justSnoozed, setJustSnoozed] = useState(null)
+  const [dyingTask, setDyingTask]     = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [filterMember, setFilterMember] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -202,21 +203,27 @@ export default function Tasks() {
 
   const snoozeTask = (id) => {
     haptic.tap()
-    setTasks(prev => prev.map(t => {
+    const updated = tasks.map(t => {
       if (t.id !== id) return t
       if (t.deadline) {
+        // Move deadline +1 day
         const d = new Date(t.deadline + 'T00:00:00')
         d.setDate(d.getDate() + 1)
         return { ...t, deadline: d.toISOString().split('T')[0] }
       }
       if (t.repeating && t.intervalDays) {
-        // Give 1 more day: shift lastDone forward by 1 day
-        const base = t.lastDone ? new Date(t.lastDone) : new Date(Date.now() - t.intervalDays * 86400000)
+        // Shift lastDone +1 so the task is due 1 day later
+        const base = t.lastDone
+          ? new Date(t.lastDone)
+          : new Date(Date.now() - t.intervalDays * 86400000)
         base.setDate(base.getDate() + 1)
         return { ...t, lastDone: base.toISOString() }
       }
       return t
-    }))
+    })
+    setTasks(updated)
+    setJustSnoozed(id)
+    setTimeout(() => setJustSnoozed(null), 1200)
   }
 
   const addTask = (e) => {
@@ -317,8 +324,9 @@ export default function Tasks() {
           const status   = getStatus(task)
           const cfg      = STATUS_CONFIG[status]
           const days     = getDaysSince(task.lastDone)
-          const isDone   = justDone === task.id
-          const isDying  = dyingTask === task.id
+          const isDone     = justDone === task.id
+          const isSnoozed  = justSnoozed === task.id
+          const isDying    = dyingTask === task.id
           const assignee = members.find(m => m.id === task.assignedTo)
           const dlInfo   = getDeadlineInfo(task.deadline)
 
@@ -390,13 +398,18 @@ export default function Tasks() {
                 )}
 
                 <div className="mt-3 flex gap-2">
-                  {(task.deadline || (task.repeating && getStatus(task) === 'overdue')) && !isDone && (
+                  {(task.deadline || task.repeating) && !isDone && (
                     <button
                       onClick={() => snoozeTask(task.id)}
                       title="Odložiť o 1 deň"
-                      className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-2.5 rounded-xl transition-colors active:scale-95 flex-shrink-0"
+                      className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2.5 rounded-xl transition-all active:scale-95 flex-shrink-0 ${
+                        isSnoozed
+                          ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                          : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
+                      }`}
                     >
-                      <Clock size={13} /> +1 deň
+                      <Clock size={13} />
+                      {isSnoozed ? 'Odložené ✓' : '+1 deň'}
                     </button>
                   )}
                   <button
