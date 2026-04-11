@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import { Plus, X, Search, ShoppingCart, ChevronDown, ChevronRight, Trash2, Loader, ChevronLeft, Calendar } from 'lucide-react'
+import { Plus, X, Search, ShoppingCart, Trash2, Loader, ChevronLeft, Calendar } from 'lucide-react'
 import { useSyncedStorage } from '../context/SyncContext'
 import { useHaptic } from '../hooks/useHaptic'
 
@@ -510,7 +510,6 @@ function RecipePicker({ onPick, onClose, savedRecipes, customRecipes, onSaveCust
 
 // ─── Day card ─────────────────────────────────────────────────────────────────
 function DayCard({ dateStr, dayIdx, group, mealPlan, onSetMeal, onClearMeal, savedRecipes, customRecipes, onSaveCustomRecipe, today }) {
-  const [open, setOpen]       = useState(dateStr === today)
   const [picking, setPicking] = useState(null) // slot id being picked
   const dayPlan = mealPlan[dateStr]?.[group] || {}
   const filledCount = MEAL_SLOTS.filter(s => dayPlan[s.id]).length
@@ -518,13 +517,10 @@ function DayCard({ dateStr, dayIdx, group, mealPlan, onSetMeal, onClearMeal, sav
 
   return (
     <div className={`bg-white dark:bg-slate-800 rounded-2xl border shadow-sm overflow-hidden ${isToday ? 'border-indigo-200 dark:border-indigo-700' : 'border-slate-100 dark:border-slate-700'}`}>
-      <button
-        className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-        onClick={() => setOpen(o => !o)}
-      >
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700">
         <div className="flex items-center gap-3">
           {isToday && <span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />}
-          <div className="text-left">
+          <div>
             <div className={`text-sm font-bold ${isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-300'}`}>
               {fmtDayHeader(dateStr, dayIdx)}
               {isToday && <span className="ml-2 text-xs font-semibold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded-md">Dnes</span>}
@@ -534,40 +530,37 @@ function DayCard({ dateStr, dayIdx, group, mealPlan, onSetMeal, onClearMeal, sav
             </div>
           </div>
         </div>
-        {open ? <ChevronDown size={16} className="text-slate-400" /> : <ChevronRight size={16} className="text-slate-400" />}
-      </button>
+      </div>
 
-      {open && (
-        <div className="border-t border-slate-100 dark:border-slate-700 divide-y divide-slate-50 dark:divide-slate-700/50">
-          {MEAL_SLOTS.map(slot => {
-            const meal = dayPlan[slot.id]
-            return (
-              <div key={slot.id} className="flex items-center gap-3 px-4 py-2.5">
-                <span className="text-lg flex-shrink-0 w-7 text-center">{slot.emoji}</span>
-                <span className="text-xs font-semibold text-slate-400 w-16 flex-shrink-0">{slot.label}</span>
-                {meal ? (
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {meal.thumb
-                      ? <img src={meal.thumb + '/preview'} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" loading="lazy" />
-                      : <span className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-base flex-shrink-0">{meal.emoji || '🍽️'}</span>
-                    }
-                    <span className="text-sm text-slate-700 dark:text-slate-300 truncate flex-1">{meal.name}</span>
-                    <button onClick={() => onClearMeal(dateStr, group, slot.id)} className="text-slate-300 hover:text-red-400 transition-colors flex-shrink-0">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setPicking(slot.id)}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors active:scale-95 flex-1">
-                    <Plus size={13} /> Pridať
+      <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
+        {MEAL_SLOTS.map(slot => {
+          const meal = dayPlan[slot.id]
+          return (
+            <div key={slot.id} className="flex items-center gap-3 px-4 py-2.5">
+              <span className="text-lg flex-shrink-0 w-7 text-center">{slot.emoji}</span>
+              <span className="text-xs font-semibold text-slate-400 w-16 flex-shrink-0">{slot.label}</span>
+              {meal ? (
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {meal.thumb
+                    ? <img src={meal.thumb + '/preview'} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" loading="lazy" />
+                    : <span className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-base flex-shrink-0">{meal.emoji || '🍽️'}</span>
+                  }
+                  <span className="text-sm text-slate-700 dark:text-slate-300 flex-1 min-w-0 break-words leading-tight">{meal.name}</span>
+                  <button onClick={() => onClearMeal(dateStr, group, slot.id)} className="text-slate-300 hover:text-red-400 transition-colors flex-shrink-0 ml-1">
+                    <Trash2 size={14} />
                   </button>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setPicking(slot.id)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors active:scale-95 flex-1">
+                  <Plus size={13} /> Pridať
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
 
       {picking && (
         <RecipePicker
