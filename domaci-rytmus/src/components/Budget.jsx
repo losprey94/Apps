@@ -237,6 +237,7 @@ function AddExpenseModal({ categories, onAdd, onAddRecurring, onClose }) {
   const [done, setDone]           = useState(false)
   const [isRecurring, setIsRecurring] = useState(false)
   const [dayOfMonth, setDayOfMonth]   = useState(1)
+  const [customDay, setCustomDay]     = useState('')
 
   const submit = (e) => {
     e.preventDefault()
@@ -299,22 +300,43 @@ function AddExpenseModal({ categories, onAdd, onAddRecurring, onClose }) {
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 block">
                 Deň v mesiaci, kedy sa účtuje
               </label>
-              <div className="flex flex-wrap gap-1.5">
-                {[1,5,10,15,20,25,28].map(d => (
-                  <button key={d} type="button" onClick={() => setDayOfMonth(d)}
+              <div className="flex flex-wrap gap-1.5 items-center">
+                {[1,5,10,15,20,25,31].map(d => (
+                  <button key={d} type="button" onClick={() => { setDayOfMonth(d); setCustomDay('') }}
                     className={`w-10 h-10 rounded-xl text-sm font-bold border transition-all ${
-                      dayOfMonth === d
+                      dayOfMonth === d && customDay === ''
                         ? 'bg-violet-600 border-transparent text-white'
                         : 'bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400'
                     }`}>{d}.</button>
                 ))}
-                <input
-                  type="number" min="1" max="28"
-                  value={dayOfMonth}
-                  onChange={e => setDayOfMonth(Math.max(1, Math.min(28, parseInt(e.target.value) || 1)))}
-                  className="w-16 h-10 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-center focus:outline-none focus:ring-2 focus:ring-violet-400"
-                  placeholder="iný"
-                />
+                <div className={`flex items-center gap-1 px-2.5 h-10 rounded-xl border-2 transition-all ${
+                  customDay !== ''
+                    ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20'
+                    : 'border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700'
+                }`}>
+                  <span className="text-xs text-slate-400 whitespace-nowrap">deň:</span>
+                  <input
+                    type="number" min="1" max="31"
+                    value={customDay}
+                    onChange={e => {
+                      setCustomDay(e.target.value)
+                      const n = parseInt(e.target.value)
+                      if (n >= 1 && n <= 31) setDayOfMonth(n)
+                    }}
+                    onBlur={() => {
+                      if (!customDay) return
+                      const n = parseInt(customDay)
+                      if (!n || n < 1 || n > 31) setCustomDay('')
+                      else setDayOfMonth(Math.min(31, Math.max(1, n)))
+                    }}
+                    className="w-10 bg-transparent text-sm font-bold text-violet-700 dark:text-violet-300 text-center focus:outline-none placeholder-slate-300"
+                    placeholder="?"
+                  />
+                </div>
+              </div>
+              <div className="text-xs text-slate-400 mt-1.5">
+                Vybraný deň: <span className="font-semibold text-slate-600 dark:text-slate-300">{dayOfMonth}.</span>
+                {dayOfMonth > 28 && ' — v kratších mesiacoch sa použije posledný deň.'}
               </div>
             </div>
           )}
@@ -395,13 +417,15 @@ export default function Budget() {
     const todayDay = today.getDate()
     const periodKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
 
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
     const toApply = []
     let changed = false
     const updated = recurringExpenses.map(r => {
-      if (!r.active || r.lastApplied === periodKey || todayDay < r.dayOfMonth) return r
+      const effectiveDay = Math.min(r.dayOfMonth, daysInMonth)
+      if (!r.active || r.lastApplied === periodKey || todayDay < effectiveDay) return r
       const year  = today.getFullYear()
       const month = String(today.getMonth() + 1).padStart(2, '0')
-      const day   = String(r.dayOfMonth).padStart(2, '0')
+      const day   = String(effectiveDay).padStart(2, '0')
       toApply.push({
         id: Date.now() + toApply.length,
         amount: r.amount,
