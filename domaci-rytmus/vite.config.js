@@ -22,9 +22,11 @@ export default defineConfig({
         lang: 'sk',
         categories: ['lifestyle', 'productivity'],
         screenshots: [
-          { src: 'screenshots/mobile-1.png', sizes: '390x844', type: 'image/png', form_factor: 'narrow', label: 'Domovská obrazovka' },
-          { src: 'screenshots/mobile-2.png', sizes: '390x844', type: 'image/png', form_factor: 'narrow', label: 'Úlohy a plány' },
-          { src: 'screenshots/mobile-3.png', sizes: '390x844', type: 'image/png', form_factor: 'narrow', label: 'Nákupný zoznam' },
+          { src: 'screenshots/mobile-1.png', sizes: '1206x2437', type: 'image/jpeg', form_factor: 'narrow', label: 'Domovská obrazovka' },
+          { src: 'screenshots/mobile-2.png', sizes: '1206x2461', type: 'image/jpeg', form_factor: 'narrow', label: 'Prehľad domácnosti' },
+          { src: 'screenshots/mobile-3.png', sizes: '1206x2452', type: 'image/jpeg', form_factor: 'narrow', label: 'Úlohy a plány' },
+          { src: 'screenshots/mobile-4.png', sizes: '1206x2451', type: 'image/jpeg', form_factor: 'narrow', label: 'Nákupný zoznam' },
+          { src: 'screenshots/mobile-5.png', sizes: '1206x2471', type: 'image/jpeg', form_factor: 'narrow', label: 'Rastliny a starostlivosť' },
         ],
         icons: [
           { src: 'pwa-64x64.png',            sizes: '64x64',    type: 'image/png' },
