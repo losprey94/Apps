@@ -206,10 +206,11 @@ export default function Tasks() {
     const updated = tasks.map(t => {
       if (t.id !== id) return t
       if (t.deadline) {
-        // Move deadline +1 day
-        const d = new Date(t.deadline + 'T00:00:00')
-        d.setDate(d.getDate() + 1)
-        return { ...t, deadline: d.toISOString().split('T')[0] }
+        // Move deadline +1 day — use local date parts to avoid UTC offset bug
+        const [y, mo, d] = t.deadline.split('-').map(Number)
+        const next = new Date(y, mo - 1, d + 1)
+        const pad = n => String(n).padStart(2, '0')
+        return { ...t, deadline: `${next.getFullYear()}-${pad(next.getMonth()+1)}-${pad(next.getDate())}` }
       }
       if (t.repeating && t.intervalDays) {
         // Shift lastDone +1 so the task is due 1 day later
