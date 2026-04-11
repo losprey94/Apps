@@ -16,9 +16,8 @@ export default defineConfig({
         background_color: '#0f172a',
         display: 'standalone',
         orientation: 'portrait',
-        // Use './' so it works on any subdirectory (GitHub Pages, custom domain, etc.)
-        scope: './',
-        start_url: './',
+        scope: 'https://losprey94.github.io/Apps/',
+        start_url: 'https://losprey94.github.io/Apps/',
         lang: 'sk',
         icons: [
           { src: 'pwa-64x64.png',            sizes: '64x64',    type: 'image/png' },
