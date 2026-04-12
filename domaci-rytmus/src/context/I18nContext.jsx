@@ -7,9 +7,15 @@ const I18nContext = createContext(null)
 export function I18nProvider({ children }) {
   const [lang, setLang] = useLocalStorage('app-language', 'sk')
 
-  const t = (key, fallback) => {
+  const t = (key, vars) => {
     const dict = T[lang] || T.sk
-    return dict[key] ?? T.sk[key] ?? fallback ?? key
+    let str = dict[key] ?? T.sk[key] ?? (typeof vars === 'string' ? vars : key)
+    if (vars && typeof vars === 'object') {
+      Object.entries(vars).forEach(([k, v]) => {
+        str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), v)
+      })
+    }
+    return str
   }
 
   const locale = LANGUAGES.find(l => l.code === lang)?.locale ?? 'sk-SK'
