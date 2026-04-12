@@ -5,11 +5,12 @@ import {
   Check, AlertTriangle, RefreshCw, Leaf, CheckSquare, ShoppingCart,
   ChevronUp, ChevronDown, Plus, Minus,
   Home, Grid3x3, UtensilsCrossed, Wallet, PawPrint, Zap, Users,
-  Navigation2, LayoutDashboard, Globe, Coins,
+  Navigation2, LayoutDashboard, Globe, Coins, Crown, Sparkles,
 } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useSyncedStorage, useSync } from '../context/SyncContext'
 import { useAuth } from '../context/AuthContext'
+import { useGoogleBilling } from '../hooks/useGoogleBilling'
 import { useI18n } from '../context/I18nContext'
 import { LANGUAGES } from '../i18n/index'
 import { CURRENCIES } from '../hooks/useCurrency'
@@ -104,7 +105,8 @@ function Toggle({ value, onChange }) {
 }
 
 export default function Settings() {
-  const { user, logout, isAuthEnabled } = useAuth()
+  const { user, logout, isAuthEnabled, premium } = useAuth()
+  const billing = useGoogleBilling(user?.uid)
   const { t, lang, setLang } = useI18n()
   const { updateHousehold, isConnected } = useSync()
   const [userName, setUserName] = useLocalStorage('user-name', '')
@@ -285,6 +287,47 @@ export default function Settings() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Premium */}
+      {billing.isAvailable && (
+        premium ? (
+          <div className="bg-gradient-to-r from-amber-400 to-orange-400 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <Crown size={22} className="text-white flex-shrink-0" />
+              <div className="flex-1">
+                <div className="font-bold text-white text-sm">Domáci Rytmus Premium</div>
+                <div className="text-xs text-amber-100 mt-0.5">Aktívne predplatné · €2.99/mesiac</div>
+              </div>
+              <Check size={18} className="text-white flex-shrink-0" />
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-amber-200 dark:border-amber-800 shadow-sm overflow-hidden">
+            <div className="px-4 pt-4 pb-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Crown size={18} className="text-amber-500" />
+                <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">Prejsť na Premium</span>
+                <span className="text-xs bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-medium">Beta zadarmo</span>
+              </div>
+              <div className="flex flex-col gap-1.5 mb-3">
+                {['Rodinný sync medzi zariadeniami', 'Zálohovanie dát v cloude', 'Prioritná podpora'].map(f => (
+                  <div key={f} className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+                    <Sparkles size={11} className="text-amber-500 flex-shrink-0" />
+                    {f}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={billing.subscribe}
+                disabled={billing.purchasing}
+                className="w-full bg-amber-500 hover:bg-amber-600 active:scale-95 disabled:opacity-60 text-white font-semibold text-sm py-2.5 rounded-xl transition-all"
+              >
+                {billing.purchasing ? 'Otvára sa platba...' : 'Predplatiť za €2.99/mesiac'}
+              </button>
+            </div>
+          </div>
+        )
       )}
 
       {/* Profile */}

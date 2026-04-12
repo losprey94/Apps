@@ -7,22 +7,22 @@ import {
   GoogleAuthProvider,
   signOut,
 } from 'firebase/auth'
-import { auth } from '../firebase/config'
+import { doc, onSnapshot } from 'firebase/firestore'
+import { auth, db } from '../firebase/config'
 
 const AuthContext = createContext(null)
 const provider = auth ? new GoogleAuthProvider() : null
 
 export function AuthProvider({ children }) {
-  // undefined = still loading, null = not logged in, object = logged in user
   const [user, setUser] = useState(undefined)
+  const [premium, setPremium] = useState(false)
 
   useEffect(() => {
     if (!auth) {
-      setUser(null) // Firebase not configured — skip auth
+      setUser(null)
       return
     }
 
-    // Handle redirect result (mobile PWA / popup-blocked fallback)
     getRedirectResult(auth)
       .then(result => { if (result?.user) setUser(result.user) })
       .catch(() => {})
@@ -30,6 +30,18 @@ export function AuthProvider({ children }) {
     const unsub = onAuthStateChanged(auth, u => setUser(u ?? null))
     return unsub
   }, [])
+
+  // Sleduj premium status v Firestore
+  useEffect(() => {
+    if (!db || !user?.uid) {
+      setPremium(false)
+      return
+    }
+    const unsub = onSnapshot(doc(db, 'users', user.uid), snap => {
+      setPremium(snap.data()?.premium === true)
+    })
+    return unsub
+  }, [user?.uid])
 
   const signInWithGoogle = async () => {
     if (!auth || !provider) return
@@ -53,6 +65,7 @@ export function AuthProvider({ children }) {
       user,
       loading: user === undefined,
       isAuthEnabled: !!auth,
+      premium,
       signInWithGoogle,
       logout,
     }}>
