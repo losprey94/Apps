@@ -3,20 +3,11 @@ import { Plus, Trash2, X, ChevronDown, ChevronRight, AlertCircle } from 'lucide-
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useSyncedStorage } from '../context/SyncContext'
 import { useHistory } from '../hooks/useHistory'
+import { useI18n } from '../context/I18nContext'
 
 const INPUT_CLS = 'w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400'
 
 const PET_EMOJIS = ['🐶','🐱','🐰','🐹','🐦','🐠','🐍','🦜','🐢','🐓','🐈','🦮']
-
-const EVENT_TYPES = [
-  { id: 'vet',      label: 'Veterinár',   icon: '🏥', color: 'blue'  },
-  { id: 'vaccine',  label: 'Vakcína',     icon: '💉', color: 'violet'},
-  { id: 'deworm',   label: 'Odčervenie',  icon: '💊', color: 'amber' },
-  { id: 'bath',     label: 'Kúpeľ',       icon: '🛁', color: 'cyan'  },
-  { id: 'groom',    label: 'Strihanie',   icon: '✂️', color: 'pink'  },
-  { id: 'medicine', label: 'Liek',        icon: '🩺', color: 'red'   },
-  { id: 'other',    label: 'Iné',         icon: '📋', color: 'slate' },
-]
 
 function getDaysUntil(dateStr) {
   if (!dateStr) return null
@@ -28,16 +19,28 @@ function getDaysSince(dateStr) {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000)
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  try {
-    return new Date(dateStr).toLocaleDateString('sk-SK', { day: 'numeric', month: 'short', year: 'numeric' })
-  } catch {
-    return new Date(dateStr).toLocaleDateString()
-  }
-}
-
 export default function Pets() {
+  const { t, locale } = useI18n()
+
+  const EVENT_TYPES = [
+    { id: 'vet',      label: t('pets.event.vet'),      icon: '🏥', color: 'blue'  },
+    { id: 'vaccine',  label: t('pets.event.vaccine'),  icon: '💉', color: 'violet'},
+    { id: 'deworm',   label: t('pets.event.deworm'),   icon: '💊', color: 'amber' },
+    { id: 'bath',     label: t('pets.event.bath'),     icon: '🛁', color: 'cyan'  },
+    { id: 'groom',    label: t('pets.event.groom'),    icon: '✂️', color: 'pink'  },
+    { id: 'medicine', label: t('pets.event.medicine'), icon: '🩺', color: 'red'   },
+    { id: 'other',    label: t('pets.event.other'),    icon: '📋', color: 'slate' },
+  ]
+
+  function formatDate(dateStr) {
+    if (!dateStr) return ''
+    try {
+      return new Date(dateStr).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
+    } catch {
+      return new Date(dateStr).toLocaleDateString()
+    }
+  }
+
   const [pets, setPets] = useLocalStorage('pets', [])
   const [events, setEvents] = useLocalStorage('pet-events', [])
   const [tasks, setTasks] = useSyncedStorage('tasks', [])
@@ -120,7 +123,7 @@ export default function Pets() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-amber-200 dark:border-amber-800 shadow-sm overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-amber-100 dark:border-amber-800/50">
             <AlertCircle size={15} className="text-amber-500" />
-            <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Nadchádzajúce udalosti</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">{t('pets.upcoming')}</span>
           </div>
           {(showAllUpcoming ? upcomingEvents : upcomingEvents.slice(0, 3)).map(e => {
             const evtType = EVENT_TYPES.find(t => t.id === e.type)
