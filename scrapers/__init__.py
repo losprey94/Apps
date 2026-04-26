@@ -18,6 +18,39 @@ def _parse_valid_until(value):
         return None
 
 
+def _valid_dates():
+    return [
+        parsed
+        for parsed in (_parse_valid_until(deal.get("valid_until")) for deal in DEMO_DEALS)
+        if parsed is not None
+    ]
+
+
+def get_data_freshness():
+    """Vráti metadata o čerstvosti dát pre UI/API."""
+    today = date.today()
+    dates = _valid_dates()
+    if not dates:
+        return {
+            "has_valid_until": False,
+            "all_expired": False,
+            "latest_valid_until": None,
+            "oldest_valid_until": None,
+            "days_since_latest_valid_until": None,
+        }
+
+    latest = max(dates)
+    oldest = min(dates)
+    days_since_latest = (today - latest).days
+    return {
+        "has_valid_until": True,
+        "all_expired": all(d < today for d in dates),
+        "latest_valid_until": latest.isoformat(),
+        "oldest_valid_until": oldest.isoformat(),
+        "days_since_latest_valid_until": max(days_since_latest, 0),
+    }
+
+
 def has_only_expired_deals():
     """Zistí, či sú všetky demo ponuky po dátume platnosti."""
     today = date.today()
