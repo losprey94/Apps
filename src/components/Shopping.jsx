@@ -45,8 +45,9 @@ export default function Shopping() {
 
   const addItem = (name, cat = selectedCategory, qty = quantity) => {
     if (!name.trim()) return
+    const nextId = items.reduce((maxId, item) => Math.max(maxId, Number(item.id) || 0), 0) + 1
     setItems([...items, {
-      id: Date.now(),
+      id: nextId,
       name: name.trim(),
       category: cat,
       quantity: parseInt(qty) || 1,
