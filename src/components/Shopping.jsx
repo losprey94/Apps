@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus, Trash2, Check, ShoppingCart, X, ChevronDown, ChevronRight } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
@@ -16,9 +16,9 @@ const SUGGESTIONS = {
   zelenina: ['Jablká', 'Banány', 'Paradajky', 'Šalát', 'Mrkva', 'Cibuľa', 'Cesnak', 'Papriky', 'Uhorky', 'Zemiaky'],
   mliecne: ['Mlieko', 'Maslo', 'Syr', 'Jogurt', 'Smotana', 'Tvaroh', 'Vajcia'],
   pecivo: ['Chlieb', 'Rožky', 'Toastový chlieb', 'Bageta'],
-  maso: ['Kurace prsia', 'Bravčový bôčik', 'Mleté mäso', 'Losos', 'Klobása'],
+  maso: ['Kuracie prsia', 'Bravčový bôčik', 'Mleté mäso', 'Losos', 'Klobása'],
   napoje: ['Voda', 'Džús', 'Káva', 'Čaj', 'Pivo', 'Limonáda'],
-  domacnost: ['Toilet paper', 'Prací prášok', 'Jar', 'Sáčky na odpadky', 'Utierky'],
+  domacnost: ['Toaletný papier', 'Prací prášok', 'Jar', 'Sáčky na odpadky', 'Utierky'],
   ostatne: [],
 }
 
@@ -30,6 +30,9 @@ export default function Shopping() {
   const [showForm, setShowForm] = useState(false)
   const [expandedCategories, setExpandedCategories] = useLocalStorage('shopping-expanded', {})
   const [showDone, setShowDone] = useLocalStorage('shopping-show-done', true)
+  const [dealSuggestions, setDealSuggestions] = useState([])
+  const [searchState, setSearchState] = useState('idle')
+  const [freshnessInfo, setFreshnessInfo] = useState(null)
 
   const toggleItem = (id) => {
     setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
@@ -78,6 +81,38 @@ export default function Shopping() {
   const suggestions = (SUGGESTIONS[selectedCategory] || []).filter(
     s => !items.some(i => i.name.toLowerCase() === s.toLowerCase())
   )
+
+  useEffect(() => {
+    if (!showForm || input.trim().length < 2) {
+      setDealSuggestions([])
+      setSearchState('idle')
+      return
+    }
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(async () => {
+      setSearchState('loading')
+      try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(input.trim())}`, {
+          signal: controller.signal,
+        })
+        if (!response.ok) throw new Error('search failed')
+        const data = await response.json()
+        setDealSuggestions((data.results || []).slice(0, 3))
+        setFreshnessInfo(data.data_freshness || null)
+        setSearchState('done')
+      } catch (error) {
+        if (error.name === 'AbortError') return
+        setSearchState('error')
+        setDealSuggestions([])
+      }
+    }, 300)
+
+    return () => {
+      controller.abort()
+      clearTimeout(timeoutId)
+    }
+  }, [input, showForm])
 
   return (
     <div className="flex flex-col gap-4">
@@ -295,6 +330,36 @@ export default function Shopping() {
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* API deal hints */}
+            {searchState === 'loading' && (
+              <div className="text-xs text-slate-400">Hľadám najlepšie akcie…</div>
+            )}
+            {searchState === 'done' && dealSuggestions.length > 0 && (
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
+                <div className="text-xs font-semibold text-emerald-700 mb-2">
+                  Najlepšie akcie pre „{input.trim()}“
+                </div>
+                <div className="flex flex-col gap-2">
+                  {dealSuggestions.map((deal) => (
+                    <div key={`${deal.store_id}-${deal.name}`} className="bg-white border border-emerald-100 rounded-lg px-2.5 py-2 text-xs">
+                      <div className="font-medium text-slate-700">{deal.name}</div>
+                      <div className="text-slate-500 mt-0.5">
+                        {deal.store} • {deal.price?.toFixed ? deal.price.toFixed(2) : deal.price} €
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {freshnessInfo?.all_expired && (
+                  <div className="text-[11px] text-amber-700 mt-2">
+                    Pozor: akciové dáta môžu byť po dátume platnosti.
+                  </div>
+                )}
+              </div>
+            )}
+            {searchState === 'error' && (
+              <div className="text-xs text-amber-600">Nepodarilo sa načítať akcie, skús znova.</div>
             )}
 
             <button

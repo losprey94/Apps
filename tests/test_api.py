@@ -14,6 +14,7 @@ class ApiSmokeTests(unittest.TestCase):
         self.assertIn("deals", data)
         self.assertIn("count", data)
         self.assertIn("stale_demo_data", data)
+        self.assertIn("data_freshness", data)
         self.assertIn("current_date", data)
 
     def test_search_requires_query(self):
@@ -28,6 +29,7 @@ class ApiSmokeTests(unittest.TestCase):
         data = response.get_json()
         self.assertIn("results", data)
         self.assertIn("stale_demo_data", data)
+        self.assertIn("data_freshness", data)
         self.assertIn("current_date", data)
         self.assertIn("timestamp", data)
 
@@ -50,7 +52,19 @@ class ApiSmokeTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
         self.assertIn("stale_demo_data", data)
+        self.assertIn("data_freshness", data)
         self.assertIn("current_date", data)
+
+    def test_data_freshness_payload_shape(self):
+        response = self.client.get("/api/deals")
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        freshness = data.get("data_freshness", {})
+        self.assertIn("has_valid_until", freshness)
+        self.assertIn("all_expired", freshness)
+        self.assertIn("latest_valid_until", freshness)
+        self.assertIn("oldest_valid_until", freshness)
+        self.assertIn("days_since_latest_valid_until", freshness)
 
 
 if __name__ == "__main__":
