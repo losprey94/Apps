@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Droplets, Plus, Trash2, Leaf, AlertCircle, X } from 'lucide-react'
+import { Droplets, Plus, Trash2, Leaf, X } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
 const DEFAULT_PLANTS = [
