@@ -332,34 +332,51 @@ export default function Shopping() {
               </div>
             )}
 
-            {/* API deal hints */}
-            {searchState === 'loading' && (
-              <div className="text-xs text-slate-400">Hľadám najlepšie akcie…</div>
-            )}
-            {searchState === 'done' && dealSuggestions.length > 0 && (
+            {/* Price comparator */}
+            {input.trim().length < 2 ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div className="text-xs font-semibold text-slate-600 mb-1">Porovnávač cien</div>
+                <div className="text-xs text-slate-500">Napíš aspoň 2 znaky a ukážem najlepšie akcie podľa obchodov.</div>
+              </div>
+            ) : (
               <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
                 <div className="text-xs font-semibold text-emerald-700 mb-2">
-                  Najlepšie akcie pre „{input.trim()}“
+                  Porovnávač cien pre „{input.trim()}“
                 </div>
-                <div className="flex flex-col gap-2">
-                  {dealSuggestions.map((deal) => (
-                    <div key={`${deal.store_id}-${deal.name}`} className="bg-white border border-emerald-100 rounded-lg px-2.5 py-2 text-xs">
-                      <div className="font-medium text-slate-700">{deal.name}</div>
-                      <div className="text-slate-500 mt-0.5">
-                        {deal.store} • {deal.price?.toFixed ? deal.price.toFixed(2) : deal.price} €
+
+                {searchState === 'loading' && (
+                  <div className="text-xs text-slate-500">Hľadám najlepšie akcie…</div>
+                )}
+
+                {searchState === 'done' && dealSuggestions.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    {dealSuggestions.map((deal) => (
+                      <div key={`${deal.store_id}-${deal.name}`} className="bg-white border border-emerald-100 rounded-lg px-2.5 py-2 text-xs">
+                        <div className="font-medium text-slate-700">{deal.name}</div>
+                        <div className="text-slate-500 mt-0.5">
+                          {deal.store} • {deal.price?.toFixed ? deal.price.toFixed(2) : deal.price} €
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
+
+                {searchState === 'done' && dealSuggestions.length === 0 && (
+                  <div className="text-xs text-slate-500">Pre tento výraz som nenašiel žiadne akcie.</div>
+                )}
+
+                {searchState === 'error' && (
+                  <div className="text-xs text-amber-700">
+                    Porovnávač sa nepodarilo načítať (pravdepodobne chýba API server). Na GitHub Pages to bez backendu nefunguje.
+                  </div>
+                )}
+
                 {freshnessInfo?.all_expired && (
                   <div className="text-[11px] text-amber-700 mt-2">
                     Pozor: akciové dáta môžu byť po dátume platnosti.
                   </div>
                 )}
               </div>
-            )}
-            {searchState === 'error' && (
-              <div className="text-xs text-amber-600">Nepodarilo sa načítať akcie, skús znova.</div>
             )}
 
             <button
