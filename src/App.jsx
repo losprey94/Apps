@@ -20,7 +20,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useLocalStorage('active-tab', 'tasks')
   const activeTabData = TABS.find(t => t.id === activeTab) || TABS[0]
   const ActiveComponent = activeTabData.component
-  const colors = TAB_COLORS[activeTabData.color]
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col max-w-lg mx-auto">
