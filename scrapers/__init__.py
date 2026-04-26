@@ -21,9 +21,13 @@ def _parse_valid_until(value):
 def has_only_expired_deals():
     """Zistí, či sú všetky demo ponuky po dátume platnosti."""
     today = date.today()
-    dated = [_parse_valid_until(deal.get("valid_until")) for deal in DEMO_DEALS]
-    dated = [d for d in dated if d is not None]
-    return bool(dated) and all(d < today for d in dated)
+    parsed_dates = [_parse_valid_until(deal.get("valid_until")) for deal in DEMO_DEALS]
+
+    # Ak niektorá položka nemá dátum platnosti, nechápeme ju ako expirovanú.
+    if any(d is None for d in parsed_dates):
+        return False
+
+    return bool(parsed_dates) and all(d < today for d in parsed_dates)
 
 
 def get_all_deals(include_expired=False):

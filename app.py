@@ -41,13 +41,14 @@ def api_search():
     results = search_deals(query, include_expired=include_expired)
 
     # Zoradiť podľa ceny (najlacnejšie prvé)
-    results.sort(key=lambda x: x["price"])
+    results.sort(key=lambda x: x.get("price", float("inf")))
 
     return jsonify({
         "query": query,
         "results": results,
         "count": len(results),
         "stale_demo_data": has_only_expired_deals(),
+        "current_date": datetime.now().date().isoformat(),
         "timestamp": datetime.now().isoformat(),
     })
 
@@ -79,11 +80,12 @@ def api_deals():
     if category:
         deals = [d for d in deals if d.get("category", "").lower() == category.lower()]
 
-    deals.sort(key=lambda x: x["price"])
+    deals.sort(key=lambda x: x.get("price", float("inf")))
     return jsonify({
         "deals": deals,
         "count": len(deals),
         "stale_demo_data": has_only_expired_deals(),
+        "current_date": datetime.now().date().isoformat(),
     })
 
 
