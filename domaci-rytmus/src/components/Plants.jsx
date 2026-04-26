@@ -50,8 +50,9 @@ export default function Plants() {
   const addPlant = (e) => {
     e.preventDefault()
     if (!name.trim()) return
+    const nextId = plants.reduce((maxId, plant) => Math.max(maxId, Number(plant.id) || 0), 0) + 1
     setPlants([...plants, {
-      id: Date.now(),
+      id: nextId,
       name: name.trim(),
       emoji,
       intervalDays: parseInt(interval) || 7,

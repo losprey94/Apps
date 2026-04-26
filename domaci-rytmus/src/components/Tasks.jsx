@@ -71,8 +71,9 @@ export default function Tasks() {
   const addTask = (e) => {
     e.preventDefault()
     if (!name.trim()) return
+    const nextId = tasks.reduce((maxId, task) => Math.max(maxId, Number(task.id) || 0), 0) + 1
     const newTask = {
-      id: Date.now(),
+      id: nextId,
       name: name.trim(),
       intervalDays: parseInt(interval) || 30,
       lastDone: null,
