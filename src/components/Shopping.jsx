@@ -9,15 +9,15 @@ const CATEGORIES = [
   { id: 'maso', label: 'Mäso & Ryby', emoji: '🥩' },
   { id: 'napoje', label: 'Nápoje', emoji: '🥤' },
   { id: 'domacnost', label: 'Domácnosť', emoji: '🧹' },
-  { id: 'ostatne', label: 'Ostatné', emoji: '🛝' },
+  { id: 'ostatne', label: 'Ostatné', emoji: '🛒' },
 ]
 
 const SUGGESTIONS = {
   zelenina: ['Jablká', 'Banány', 'Paradajky', 'Šalát', 'Mrkva', 'Cibuľa', 'Cesnak', 'Papriky', 'Uhorky', 'Zemiaky'],
   mliecne: ['Mlieko', 'Maslo', 'Syr', 'Jogurt', 'Smotana', 'Tvaroh', 'Vajcia'],
   pecivo: ['Chlieb', 'Rožky', 'Toastový chlieb', 'Bageta'],
-  maso: ['Kurace prsia', 'Bravčový bôčik', 'Mleté mäso', 'Losos', 'Klobása'],
-  napoje: ['Voda', 'Džús', 'Káva', 'Čaj', 'Pivo', 'Limo náda'],
+  maso: ['Kuracie prsia', 'Bravčový bôčik', 'Mleté mäso', 'Losos', 'Klobása'],
+  napoje: ['Voda', 'Džús', 'Káva', 'Čaj', 'Pivo', 'Limonáda'],
   domacnost: ['Toilet paper', 'Prací prášok', 'Jar', 'Sáčky na odpadky', 'Utierky'],
   ostatne: [],
 }
@@ -45,8 +45,9 @@ export default function Shopping() {
 
   const addItem = (name, cat = selectedCategory, qty = quantity) => {
     if (!name.trim()) return
+    const nextId = items.reduce((maxId, item) => Math.max(maxId, Number(item.id) || 0), 0) + 1
     setItems([...items, {
-      id: Date.now(),
+      id: nextId,
       name: name.trim(),
       category: cat,
       quantity: parseInt(qty) || 1,
@@ -101,7 +102,7 @@ export default function Shopping() {
               onClick={clearDone}
               className="text-xs text-slate-400 hover:text-red-500 transition-colors border border-slate-200 hover:border-red-200 rounded-xl px-3 py-1.5"
             >
-              Vymazatť hotové
+              Vymazať hotové
             </button>
           )}
         </div>
