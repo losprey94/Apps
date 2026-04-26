@@ -71,8 +71,9 @@ export default function Tasks() {
   const addTask = (e) => {
     e.preventDefault()
     if (!name.trim()) return
+    const nextId = tasks.reduce((maxId, task) => Math.max(maxId, Number(task.id) || 0), 0) + 1
     const newTask = {
-      id: Date.now(),
+      id: nextId,
       name: name.trim(),
       intervalDays: parseInt(interval) || 30,
       lastDone: null,
@@ -138,10 +139,10 @@ export default function Tasks() {
                         </span>
                         {days !== null ? (
                           <span className="text-xs text-slate-400">
-                            pred {days} {days === 1 ? 'dnňom' : days < 5 ? 'dnňami' : 'dnňami'}
+                            pred {days} {days === 1 ? 'dňom' : 'dňami'}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-400">Ĕšte nesplnené</span>
+                          <span className="text-xs text-slate-400">Ešte nesplnené</span>
                         )}
                       </div>
                       <div className="mt-1.5 text-xs text-slate-400">
