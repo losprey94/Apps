@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Droplets, Plus, Trash2, Leaf, AlertCircle, X } from 'lucide-react'
+import { Droplets, Plus, Trash2, Leaf, X } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
 const DEFAULT_PLANTS = [
@@ -84,7 +84,7 @@ export default function Plants() {
             <div className="font-semibold text-white text-sm">
               {thirstyCount} {thirstyCount === 1 ? 'rastlina potrebuje' : thirstyCount < 5 ? 'rastliny potrebujú' : 'rastlín potrebuje'} vodu
             </div>
-            <div className="text-cyan-100 text-xs mt-0.5">Nezabúbaj na ne!</div>
+            <div className="text-cyan-100 text-xs mt-0.5">Nezabúdaj na ne!</div>
           </div>
         </div>
       )}
@@ -143,7 +143,7 @@ export default function Plants() {
 
                     <div className="mt-2 text-xs text-slate-500">
                       {days === null
-                        ? 'Ĕšte nezaliata'
+                        ? 'Ešte nezaliata'
                         : daysUntil !== null && daysUntil > 0
                           ? `ďalšie polievanie o ${daysUntil} ${daysUntil === 1 ? 'deň' : daysUntil < 5 ? 'dni' : 'dní'}`
                           : `Oneskorene o ${Math.abs(daysUntil || 0)} dní`

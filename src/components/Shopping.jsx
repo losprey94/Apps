@@ -17,7 +17,7 @@ const SUGGESTIONS = {
   mliecne: ['Mlieko', 'Maslo', 'Syr', 'Jogurt', 'Smotana', 'Tvaroh', 'Vajcia'],
   pecivo: ['Chlieb', 'Rožky', 'Toastový chlieb', 'Bageta'],
   maso: ['Kurace prsia', 'Bravčový bôčik', 'Mleté mäso', 'Losos', 'Klobása'],
-  napoje: ['Voda', 'Džús', 'Káva', 'Čaj', 'Pivo', 'Limo náda'],
+  napoje: ['Voda', 'Džús', 'Káva', 'Čaj', 'Pivo', 'Limonáda'],
   domacnost: ['Toilet paper', 'Prací prášok', 'Jar', 'Sáčky na odpadky', 'Utierky'],
   ostatne: [],
 }
@@ -102,7 +102,7 @@ export default function Shopping() {
               onClick={clearDone}
               className="text-xs text-slate-400 hover:text-red-500 transition-colors border border-slate-200 hover:border-red-200 rounded-xl px-3 py-1.5"
             >
-              Vymazatť hotové
+              Vymazať hotové
             </button>
           )}
         </div>
