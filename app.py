@@ -67,6 +67,17 @@ def api_stores():
     return jsonify({"stores": stores})
 
 
+@app.route("/api/health")
+def api_health():
+    """Jednoduchý healthcheck pre frontend."""
+    return jsonify({
+        "status": "ok",
+        "current_date": datetime.now().date().isoformat(),
+        "timestamp": datetime.now().isoformat(),
+        "data_freshness": get_data_freshness(),
+    })
+
+
 @app.route("/api/deals")
 def api_deals():
     """Všetky aktuálne akciové ponuky."""
