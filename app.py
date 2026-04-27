@@ -19,7 +19,7 @@ app.logger.setLevel(logging.INFO)
 # Scraper: sťahuje akciové ponuky zo slovenských obchodov
 # ---------------------------------------------------------------------------
 
-from scrapers import get_all_deals, get_data_freshness, has_only_expired_deals, search_deals
+from scrapers import get_all_deals, has_only_expired_deals, search_deals
 
 # ---------------------------------------------------------------------------
 # API routes
@@ -39,7 +39,6 @@ def api_search():
 
     include_expired = request.args.get("include_expired", "").lower() in {"1", "true", "yes"}
     results = search_deals(query, include_expired=include_expired)
-    freshness = get_data_freshness()
 
     # Zoradiť podľa ceny (najlacnejšie prvé)
     results.sort(key=lambda x: x.get("price", float("inf")))
@@ -49,7 +48,6 @@ def api_search():
         "results": results,
         "count": len(results),
         "stale_demo_data": has_only_expired_deals(),
-        "data_freshness": freshness,
         "current_date": datetime.now().date().isoformat(),
         "timestamp": datetime.now().isoformat(),
     })
@@ -87,7 +85,6 @@ def api_deals():
     category = request.args.get("category", "")
     include_expired = request.args.get("include_expired", "").lower() in {"1", "true", "yes"}
     deals = get_all_deals(include_expired=include_expired)
-    freshness = get_data_freshness()
 
     if store:
         deals = [d for d in deals if d["store_id"] == store]
@@ -99,7 +96,6 @@ def api_deals():
         "deals": deals,
         "count": len(deals),
         "stale_demo_data": has_only_expired_deals(),
-        "data_freshness": freshness,
         "current_date": datetime.now().date().isoformat(),
     })
 
@@ -118,4 +114,5 @@ def service_worker():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    debug_enabled = os.environ.get("FLASK_DEBUG", "").lower() in {"1", "true", "yes"}
+    app.run(host="0.0.0.0", port=port, debug=debug_enabled)

@@ -18,7 +18,7 @@ const SUGGESTIONS = {
   pecivo: ['Chlieb', 'Rožky', 'Toastový chlieb', 'Bageta'],
   maso: ['Kuracie prsia', 'Bravčový bôčik', 'Mleté mäso', 'Losos', 'Klobása'],
   napoje: ['Voda', 'Džús', 'Káva', 'Čaj', 'Pivo', 'Limonáda'],
-  domacnost: ['Toaletný papier', 'Prací prášok', 'Jar', 'Sáčky na odpadky', 'Utierky'],
+  domacnost: ['Toilet paper', 'Prací prášok', 'Jar', 'Sáčky na odpadky', 'Utierky'],
   ostatne: [],
 }
 
