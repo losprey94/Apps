@@ -23,7 +23,7 @@ Backend vie načítať ceny z `data/live_deals.json` (ak sú dostupné) a fallba
   - `LIVE_DEALS_URLS="https://example.com/storeA.json,https://example.com/storeB.json" python scripts/update_live_deals.py`
 - Automatický refresh:
   - workflow `.github/workflows/refresh-live-deals.yml` beží každých 6 hodín
-  - workflow sa spustí aj na push do branch `claude/price-comparison-scanner-mAgqH` a `claude/home-rhythm-app-RHoEx`
+  - workflow sa spustí aj na push do branch `claude/home-rhythm-app-RHoEx`
   - nastav repo secret `LIVE_DEALS_URLS` (čiarkou oddelené JSON feed URL)
 
 ## GitHub Pages deploy

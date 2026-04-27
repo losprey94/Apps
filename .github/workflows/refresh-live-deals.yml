@@ -2,9 +2,7 @@ name: Refresh live deals data
 
 on:
   push:
-    branches:
-      - "claude/price-comparison-scanner-mAgqH"
-      - "claude/home-rhythm-app-RHoEx"
+    branches: ["claude/home-rhythm-app-RHoEx"]
   schedule:
     - cron: "17 */6 * * *"
   workflow_dispatch:
