@@ -20,7 +20,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useLocalStorage('active-tab', 'tasks')
   const activeTabData = TABS.find(t => t.id === activeTab) || TABS[0]
   const ActiveComponent = activeTabData.component
-  const colors = TAB_COLORS[activeTabData.color]
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col max-w-lg mx-auto">
@@ -31,7 +30,7 @@ export default function App() {
             <Home size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-slate-900 leading-tight">Dom&#225;ci Rytmus</h1>
+            <h1 className="text-base font-bold text-slate-900 leading-tight">Domáci Rytmus</h1>
             <p className="text-xs text-slate-400 leading-tight">{activeTabData.label}</p>
           </div>
         </div>
