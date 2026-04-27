@@ -9,7 +9,7 @@ const CATEGORIES = [
   { id: 'maso', label: 'Mäso & Ryby', emoji: '🥩' },
   { id: 'napoje', label: 'Nápoje', emoji: '🥤' },
   { id: 'domacnost', label: 'Domácnosť', emoji: '🧹' },
-  { id: 'ostatne', label: 'Ostatné', emoji: '🛝' },
+  { id: 'ostatne', label: 'Ostatné', emoji: '🛒' },
 ]
 
 const SUGGESTIONS = {
@@ -21,6 +21,16 @@ const SUGGESTIONS = {
   domacnost: ['Toaletný papier', 'Prací prášok', 'Jar', 'Sáčky na odpadky', 'Utierky'],
   ostatne: [],
 }
+
+const FALLBACK_COMPARE_DEALS = [
+  { name: 'Mlieko polotučné 1l', store: 'Lidl', store_id: 'lidl', price: 0.89 },
+  { name: 'Mlieko polotučné 1l', store: 'Tesco', store_id: 'tesco', price: 0.95 },
+  { name: 'Chlieb ražný 500g', store: 'Lidl', store_id: 'lidl', price: 0.89 },
+  { name: 'Kuracie prsia 1kg', store: 'Lidl', store_id: 'lidl', price: 4.99 },
+  { name: 'Kuracie prsia bez kosti 1kg', store: 'Kaufland', store_id: 'kaufland', price: 5.49 },
+  { name: 'Banány 1kg', store: 'Lidl', store_id: 'lidl', price: 0.99 },
+  { name: 'Banány 1kg', store: 'Kaufland', store_id: 'kaufland', price: 1.09 },
+]
 
 export default function Shopping() {
   const [items, setItems] = useLocalStorage('shopping', [])
@@ -154,6 +164,53 @@ export default function Shopping() {
             <div className="text-right mt-1 text-xs text-slate-400">
               {Math.round((doneItems.length / items.length) * 100)}% hotovo
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Visible price comparator card */}
+      <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <div className="text-sm font-semibold text-emerald-700">Porovnávač cien</div>
+            <div className={`text-[11px] ${apiStatus === 'online' ? 'text-emerald-700' : apiStatus === 'offline' ? 'text-amber-700' : 'text-slate-500'}`}>
+              API: {apiStatus === 'online' ? 'online' : apiStatus === 'offline' ? 'offline' : 'kontrolujem…'}
+            </div>
+          </div>
+        </div>
+        <div className="mt-2 flex gap-2">
+          <input
+            type="text"
+            value={compareQuery}
+            onChange={(e) => setCompareQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') runCompareSearch() }}
+            placeholder="Napr. mlieko, chlieb..."
+            className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm"
+          />
+          <button
+            type="button"
+            onClick={runCompareSearch}
+            className="px-3 py-2 text-sm rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            Hľadať
+          </button>
+        </div>
+        {compareState === 'loading' && <div className="text-xs text-slate-500 mt-2">Hľadám akcie…</div>}
+        {compareState === 'error' && <div className="text-xs text-amber-700 mt-2">Porovnanie sa nepodarilo načítať.</div>}
+        {compareState === 'done' && compareResults.length === 0 && (
+          <div className="text-xs text-slate-500 mt-2">Nenašiel som žiadne výsledky.</div>
+        )}
+        {compareState === 'done' && compareResults.length > 0 && (
+          <div className="mt-2 flex flex-col gap-1.5">
+            {compareSource === 'fallback' && (
+              <div className="text-[11px] text-amber-700">Zobrazené demo porovnanie (offline fallback).</div>
+            )}
+            {compareResults.map((deal) => (
+              <div key={`cmp-${deal.store_id}-${deal.name}`} className="text-xs bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1.5">
+                <span className="font-medium text-slate-700">{deal.name}</span>
+                <span className="text-slate-500"> • {deal.store} • {deal.price?.toFixed ? deal.price.toFixed(2) : deal.price} €</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
