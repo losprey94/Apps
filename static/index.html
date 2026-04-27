@@ -774,6 +774,11 @@
 
     // Init
     showHome();
+    const initialQuery = new URLSearchParams(window.location.search).get('q');
+    if (initialQuery) {
+        searchInput.value = initialQuery;
+        doSearch();
+    }
 
     // Register service worker
     if ('serviceWorker' in navigator) {

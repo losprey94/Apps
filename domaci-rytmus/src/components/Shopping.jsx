@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Plus, Trash2, Check, ShoppingCart, X, ChevronDown, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, Trash2, Check, ShoppingCart, X, ChevronDown, ChevronRight, Search } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
 const CATEGORIES = [
@@ -40,22 +40,7 @@ export default function Shopping() {
   const [showForm, setShowForm] = useState(false)
   const [expandedCategories, setExpandedCategories] = useLocalStorage('shopping-expanded', {})
   const [showDone, setShowDone] = useLocalStorage('shopping-show-done', true)
-  const [dealSuggestions, setDealSuggestions] = useState([])
-  const [searchState, setSearchState] = useState('idle')
-  const [freshnessInfo, setFreshnessInfo] = useState(null)
-  const [apiStatus, setApiStatus] = useState('unknown')
-  const [compareQuery, setCompareQuery] = useState('')
-  const [compareResults, setCompareResults] = useState([])
-  const [compareState, setCompareState] = useState('idle')
-  const [compareSource, setCompareSource] = useState('api')
-
-  const fallbackSearch = (query) => {
-    const q = query.toLowerCase().trim()
-    if (!q) return []
-    return FALLBACK_COMPARE_DEALS
-      .filter((deal) => deal.name.toLowerCase().includes(q))
-      .sort((a, b) => (a.price || Infinity) - (b.price || Infinity))
-  }
+  const [priceQuery, setPriceQuery] = useState('')
 
   const toggleItem = (id) => {
     setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
@@ -105,87 +90,12 @@ export default function Shopping() {
     s => !items.some(i => i.name.toLowerCase() === s.toLowerCase())
   )
 
-  useEffect(() => {
-    if (!showForm || input.trim().length < 2) {
-      setDealSuggestions([])
-      setSearchState('idle')
-      return
+  const openPriceCompare = () => {
+    const url = new URL('static/index.html', window.location.href)
+    if (priceQuery.trim()) {
+      url.searchParams.set('q', priceQuery.trim())
     }
-
-    const controller = new AbortController()
-    const timeoutId = setTimeout(async () => {
-      setSearchState('loading')
-      try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(input.trim())}`, {
-          signal: controller.signal,
-        })
-        if (!response.ok) throw new Error('search failed')
-        const data = await response.json()
-        setDealSuggestions((data.results || []).slice(0, 3))
-        setFreshnessInfo(data.data_freshness || null)
-        setSearchState('done')
-      } catch (error) {
-        if (error.name === 'AbortError') return
-        const fallback = fallbackSearch(input).slice(0, 3)
-        if (fallback.length > 0) {
-          setDealSuggestions(fallback)
-          setSearchState('done')
-        } else {
-          setSearchState('error')
-          setDealSuggestions([])
-        }
-      }
-    }, 300)
-
-    return () => {
-      controller.abort()
-      clearTimeout(timeoutId)
-    }
-  }, [input, showForm])
-
-  useEffect(() => {
-    if (!showForm && apiStatus !== 'unknown') return
-    let cancelled = false
-
-    fetch('/api/health')
-      .then((response) => {
-        if (!response.ok) throw new Error('health failed')
-        return response.json()
-      })
-      .then(() => {
-        if (!cancelled) setApiStatus('online')
-      })
-      .catch(() => {
-        if (!cancelled) setApiStatus('offline')
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [showForm, apiStatus])
-
-  const runCompareSearch = async () => {
-    const q = compareQuery.trim()
-    if (q.length < 2) return
-    setCompareState('loading')
-    try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(q)}`)
-      if (!response.ok) throw new Error('search failed')
-      const data = await response.json()
-      setCompareResults((data.results || []).slice(0, 5))
-      setCompareSource('api')
-      setCompareState('done')
-    } catch {
-      const fallback = fallbackSearch(q).slice(0, 5)
-      if (fallback.length > 0) {
-        setCompareResults(fallback)
-        setCompareSource('fallback')
-        setCompareState('done')
-      } else {
-        setCompareResults([])
-        setCompareState('error')
-      }
-    }
+    window.open(url.toString(), '_blank')
   }
 
   return (
@@ -232,51 +142,26 @@ export default function Shopping() {
         )}
       </div>
 
-      {/* Visible price comparator card */}
-      <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-4">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <div className="text-sm font-semibold text-emerald-700">Porovnávač cien</div>
-            <div className={`text-[11px] ${apiStatus === 'online' ? 'text-emerald-700' : apiStatus === 'offline' ? 'text-amber-700' : 'text-slate-500'}`}>
-              API: {apiStatus === 'online' ? 'online' : apiStatus === 'offline' ? 'offline' : 'kontrolujem…'}
-            </div>
-          </div>
-        </div>
-        <div className="mt-2 flex gap-2">
+      {/* Price comparison quick action */}
+      <div className="bg-white rounded-2xl border border-violet-100 shadow-sm p-4">
+        <div className="text-sm font-semibold text-slate-800 mb-2">Porovnanie cien</div>
+        <div className="flex gap-2">
           <input
             type="text"
-            value={compareQuery}
-            onChange={(e) => setCompareQuery(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') runCompareSearch() }}
-            placeholder="Napr. mlieko, chlieb..."
-            className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm"
+            placeholder="Produkt na porovnanie (napr. mlieko)"
+            value={priceQuery}
+            onChange={e => setPriceQuery(e.target.value)}
+            className="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
           />
           <button
             type="button"
-            onClick={runCompareSearch}
-            className="px-3 py-2 text-sm rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+            onClick={openPriceCompare}
+            className="inline-flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-3 py-2.5 rounded-xl transition-colors"
           >
-            Hľadať
+            <Search size={15} />
+            Porovnať
           </button>
         </div>
-        {compareState === 'loading' && <div className="text-xs text-slate-500 mt-2">Hľadám akcie…</div>}
-        {compareState === 'error' && <div className="text-xs text-amber-700 mt-2">Porovnanie sa nepodarilo načítať.</div>}
-        {compareState === 'done' && compareResults.length === 0 && (
-          <div className="text-xs text-slate-500 mt-2">Nenašiel som žiadne výsledky.</div>
-        )}
-        {compareState === 'done' && compareResults.length > 0 && (
-          <div className="mt-2 flex flex-col gap-1.5">
-            {compareSource === 'fallback' && (
-              <div className="text-[11px] text-amber-700">Zobrazené demo porovnanie (offline fallback).</div>
-            )}
-            {compareResults.map((deal) => (
-              <div key={`cmp-${deal.store_id}-${deal.name}`} className="text-xs bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1.5">
-                <span className="font-medium text-slate-700">{deal.name}</span>
-                <span className="text-slate-500"> • {deal.store} • {deal.price?.toFixed ? deal.price.toFixed(2) : deal.price} €</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Grouped pending items */}
