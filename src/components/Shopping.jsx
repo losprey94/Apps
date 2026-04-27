@@ -43,19 +43,6 @@ export default function Shopping() {
   const [dealSuggestions, setDealSuggestions] = useState([])
   const [searchState, setSearchState] = useState('idle')
   const [freshnessInfo, setFreshnessInfo] = useState(null)
-  const [apiStatus, setApiStatus] = useState('unknown')
-  const [compareQuery, setCompareQuery] = useState('')
-  const [compareResults, setCompareResults] = useState([])
-  const [compareState, setCompareState] = useState('idle')
-  const [compareSource, setCompareSource] = useState('api')
-
-  const fallbackSearch = (query) => {
-    const q = query.toLowerCase().trim()
-    if (!q) return []
-    return FALLBACK_COMPARE_DEALS
-      .filter((deal) => deal.name.toLowerCase().includes(q))
-      .sort((a, b) => (a.price || Infinity) - (b.price || Infinity))
-  }
 
   const toggleItem = (id) => {
     setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
@@ -126,14 +113,8 @@ export default function Shopping() {
         setSearchState('done')
       } catch (error) {
         if (error.name === 'AbortError') return
-        const fallback = fallbackSearch(input).slice(0, 3)
-        if (fallback.length > 0) {
-          setDealSuggestions(fallback)
-          setSearchState('done')
-        } else {
-          setSearchState('error')
-          setDealSuggestions([])
-        }
+        setSearchState('error')
+        setDealSuggestions([])
       }
     }, 300)
 
@@ -142,51 +123,6 @@ export default function Shopping() {
       clearTimeout(timeoutId)
     }
   }, [input, showForm])
-
-  useEffect(() => {
-    if (!showForm && apiStatus !== 'unknown') return
-    let cancelled = false
-
-    fetch('/api/health')
-      .then((response) => {
-        if (!response.ok) throw new Error('health failed')
-        return response.json()
-      })
-      .then(() => {
-        if (!cancelled) setApiStatus('online')
-      })
-      .catch(() => {
-        if (!cancelled) setApiStatus('offline')
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [showForm, apiStatus])
-
-  const runCompareSearch = async () => {
-    const q = compareQuery.trim()
-    if (q.length < 2) return
-    setCompareState('loading')
-    try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(q)}`)
-      if (!response.ok) throw new Error('search failed')
-      const data = await response.json()
-      setCompareResults((data.results || []).slice(0, 5))
-      setCompareSource('api')
-      setCompareState('done')
-    } catch {
-      const fallback = fallbackSearch(q).slice(0, 5)
-      if (fallback.length > 0) {
-        setCompareResults(fallback)
-        setCompareSource('fallback')
-        setCompareState('done')
-      } else {
-        setCompareResults([])
-        setCompareState('error')
-      }
-    }
-  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -463,9 +399,6 @@ export default function Shopping() {
               <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
                 <div className="text-xs font-semibold text-emerald-700 mb-2">
                   Porovnávač cien pre „{input.trim()}“
-                </div>
-                <div className={`text-[11px] mb-2 ${apiStatus === 'online' ? 'text-emerald-700' : apiStatus === 'offline' ? 'text-amber-700' : 'text-slate-500'}`}>
-                  API: {apiStatus === 'online' ? 'online' : apiStatus === 'offline' ? 'offline' : 'kontrolujem…'}
                 </div>
 
                 {searchState === 'loading' && (
