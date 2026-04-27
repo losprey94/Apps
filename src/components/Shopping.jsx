@@ -9,7 +9,7 @@ const CATEGORIES = [
   { id: 'maso', label: 'Mäso & Ryby', emoji: '🥩' },
   { id: 'napoje', label: 'Nápoje', emoji: '🥤' },
   { id: 'domacnost', label: 'Domácnosť', emoji: '🧹' },
-  { id: 'ostatne', label: 'Ostatné', emoji: '🛝' },
+  { id: 'ostatne', label: 'Ostatné', emoji: '🛒' },
 ]
 
 const SUGGESTIONS = {
