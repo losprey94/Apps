@@ -1,4 +1,7 @@
 import unittest
+import os
+import json
+import tempfile
 
 from app import app
 
@@ -74,6 +77,41 @@ class ApiSmokeTests(unittest.TestCase):
         self.assertIn("latest_valid_until", freshness)
         self.assertIn("oldest_valid_until", freshness)
         self.assertIn("days_since_latest_valid_until", freshness)
+
+    def test_live_deals_file_is_used_when_available(self):
+        payload = {
+            "deals": [
+                {
+                    "name": "Test Mlieko Live 1l",
+                    "price": 0.77,
+                    "original_price": 1.09,
+                    "unit": "1 l",
+                    "store": "Tesco",
+                    "store_id": "tesco",
+                    "category": "Mliečne výrobky",
+                    "valid_until": "2099-12-31",
+                    "discount_percent": 29,
+                }
+            ]
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            file_path = os.path.join(tmp, "live_deals.json")
+            with open(file_path, "w", encoding="utf-8") as fh:
+                json.dump(payload, fh)
+
+            old_value = os.environ.get("LIVE_DEALS_FILE")
+            os.environ["LIVE_DEALS_FILE"] = file_path
+            try:
+                response = self.client.get("/api/search?q=Test+Mlieko+Live")
+                self.assertEqual(response.status_code, 200)
+                data = response.get_json()
+                self.assertGreaterEqual(data.get("count", 0), 1)
+                self.assertTrue(any(item.get("name") == "Test Mlieko Live 1l" for item in data.get("results", [])))
+            finally:
+                if old_value is None:
+                    os.environ.pop("LIVE_DEALS_FILE", None)
+                else:
+                    os.environ["LIVE_DEALS_FILE"] = old_value
 
 
 if __name__ == "__main__":

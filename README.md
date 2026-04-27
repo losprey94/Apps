@@ -15,24 +15,12 @@ The React Compiler is not enabled on this template because of its impact on dev 
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 
-## Project layout (important)
+## Live deals feed (multi-store, auto refresh)
 
-This repository contains more than one app surface:
+Backend vie načítať ceny z `data/live_deals.json` (ak sú dostupné) a fallbackne na demo dataset.
 
-- `domaci-rytmus/` → primary React app variant to work on for household features.
-- `src/` at repo root → secondary React variant with similar components.
-- `app.py` + `static/` + `scrapers/` → Flask API and static price-comparator page.
-
-When making user-facing changes for Domáci Rytmus, update `domaci-rytmus/` first.
-
-## Safe change workflow
-
-From the repository root:
-
-1. Run backend API checks:
-   - `python -m unittest tests/test_api.py`
-2. Run frontend checks for Domáci Rytmus variant:
-   - `npm run domaci:lint`
-   - `npm run domaci:build`
-3. Or run everything with one command:
-   - `npm run verify`
+- Lokálny refresh:
+  - `LIVE_DEALS_URLS="https://example.com/storeA.json,https://example.com/storeB.json" python scripts/update_live_deals.py`
+- Automatický refresh:
+  - workflow `.github/workflows/refresh-live-deals.yml` beží každých 6 hodín
+  - nastav repo secret `LIVE_DEALS_URLS` (čiarkou oddelené JSON feed URL)
