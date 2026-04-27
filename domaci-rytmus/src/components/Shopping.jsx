@@ -91,11 +91,11 @@ export default function Shopping() {
   )
 
   const openPriceCompare = () => {
-    const url = new URL('static/index.html', window.location.href)
+    const url = new URL('price-compare.html', window.location.href)
     if (priceQuery.trim()) {
       url.searchParams.set('q', priceQuery.trim())
     }
-    window.open(url.toString(), '_blank')
+    window.location.assign(url.toString())
   }
 
   return (
