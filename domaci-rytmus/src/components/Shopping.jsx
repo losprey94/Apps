@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus, Trash2, Check, ShoppingCart, X, ChevronDown, ChevronRight } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
@@ -9,7 +9,7 @@ const CATEGORIES = [
   { id: 'maso', label: 'Mäso & Ryby', emoji: '🥩' },
   { id: 'napoje', label: 'Nápoje', emoji: '🥤' },
   { id: 'domacnost', label: 'Domácnosť', emoji: '🧹' },
-  { id: 'ostatne', label: 'Ostatné', emoji: '🛒' },
+  { id: 'ostatne', label: 'Ostatné', emoji: '🛝' },
 ]
 
 const SUGGESTIONS = {
@@ -18,9 +18,19 @@ const SUGGESTIONS = {
   pecivo: ['Chlieb', 'Rožky', 'Toastový chlieb', 'Bageta'],
   maso: ['Kuracie prsia', 'Bravčový bôčik', 'Mleté mäso', 'Losos', 'Klobása'],
   napoje: ['Voda', 'Džús', 'Káva', 'Čaj', 'Pivo', 'Limonáda'],
-  domacnost: ['Toilet paper', 'Prací prášok', 'Jar', 'Sáčky na odpadky', 'Utierky'],
+  domacnost: ['Toaletný papier', 'Prací prášok', 'Jar', 'Sáčky na odpadky', 'Utierky'],
   ostatne: [],
 }
+
+const FALLBACK_COMPARE_DEALS = [
+  { name: 'Mlieko polotučné 1l', store: 'Lidl', store_id: 'lidl', price: 0.89 },
+  { name: 'Mlieko polotučné 1l', store: 'Tesco', store_id: 'tesco', price: 0.95 },
+  { name: 'Chlieb ražný 500g', store: 'Lidl', store_id: 'lidl', price: 0.89 },
+  { name: 'Kuracie prsia 1kg', store: 'Lidl', store_id: 'lidl', price: 4.99 },
+  { name: 'Kuracie prsia bez kosti 1kg', store: 'Kaufland', store_id: 'kaufland', price: 5.49 },
+  { name: 'Banány 1kg', store: 'Lidl', store_id: 'lidl', price: 0.99 },
+  { name: 'Banány 1kg', store: 'Kaufland', store_id: 'kaufland', price: 1.09 },
+]
 
 export default function Shopping() {
   const [items, setItems] = useLocalStorage('shopping', [])
@@ -30,6 +40,22 @@ export default function Shopping() {
   const [showForm, setShowForm] = useState(false)
   const [expandedCategories, setExpandedCategories] = useLocalStorage('shopping-expanded', {})
   const [showDone, setShowDone] = useLocalStorage('shopping-show-done', true)
+  const [dealSuggestions, setDealSuggestions] = useState([])
+  const [searchState, setSearchState] = useState('idle')
+  const [freshnessInfo, setFreshnessInfo] = useState(null)
+  const [apiStatus, setApiStatus] = useState('unknown')
+  const [compareQuery, setCompareQuery] = useState('')
+  const [compareResults, setCompareResults] = useState([])
+  const [compareState, setCompareState] = useState('idle')
+  const [compareSource, setCompareSource] = useState('api')
+
+  const fallbackSearch = (query) => {
+    const q = query.toLowerCase().trim()
+    if (!q) return []
+    return FALLBACK_COMPARE_DEALS
+      .filter((deal) => deal.name.toLowerCase().includes(q))
+      .sort((a, b) => (a.price || Infinity) - (b.price || Infinity))
+  }
 
   const toggleItem = (id) => {
     setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
@@ -79,6 +105,89 @@ export default function Shopping() {
     s => !items.some(i => i.name.toLowerCase() === s.toLowerCase())
   )
 
+  useEffect(() => {
+    if (!showForm || input.trim().length < 2) {
+      setDealSuggestions([])
+      setSearchState('idle')
+      return
+    }
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(async () => {
+      setSearchState('loading')
+      try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(input.trim())}`, {
+          signal: controller.signal,
+        })
+        if (!response.ok) throw new Error('search failed')
+        const data = await response.json()
+        setDealSuggestions((data.results || []).slice(0, 3))
+        setFreshnessInfo(data.data_freshness || null)
+        setSearchState('done')
+      } catch (error) {
+        if (error.name === 'AbortError') return
+        const fallback = fallbackSearch(input).slice(0, 3)
+        if (fallback.length > 0) {
+          setDealSuggestions(fallback)
+          setSearchState('done')
+        } else {
+          setSearchState('error')
+          setDealSuggestions([])
+        }
+      }
+    }, 300)
+
+    return () => {
+      controller.abort()
+      clearTimeout(timeoutId)
+    }
+  }, [input, showForm])
+
+  useEffect(() => {
+    if (!showForm && apiStatus !== 'unknown') return
+    let cancelled = false
+
+    fetch('/api/health')
+      .then((response) => {
+        if (!response.ok) throw new Error('health failed')
+        return response.json()
+      })
+      .then(() => {
+        if (!cancelled) setApiStatus('online')
+      })
+      .catch(() => {
+        if (!cancelled) setApiStatus('offline')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [showForm, apiStatus])
+
+  const runCompareSearch = async () => {
+    const q = compareQuery.trim()
+    if (q.length < 2) return
+    setCompareState('loading')
+    try {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(q)}`)
+      if (!response.ok) throw new Error('search failed')
+      const data = await response.json()
+      setCompareResults((data.results || []).slice(0, 5))
+      setCompareSource('api')
+      setCompareState('done')
+    } catch {
+      const fallback = fallbackSearch(q).slice(0, 5)
+      if (fallback.length > 0) {
+        setCompareResults(fallback)
+        setCompareSource('fallback')
+        setCompareState('done')
+      } else {
+        setCompareResults([])
+        setCompareState('error')
+      }
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {/* Stats bar */}
@@ -119,6 +228,53 @@ export default function Shopping() {
             <div className="text-right mt-1 text-xs text-slate-400">
               {Math.round((doneItems.length / items.length) * 100)}% hotovo
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Visible price comparator card */}
+      <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <div className="text-sm font-semibold text-emerald-700">Porovnávač cien</div>
+            <div className={`text-[11px] ${apiStatus === 'online' ? 'text-emerald-700' : apiStatus === 'offline' ? 'text-amber-700' : 'text-slate-500'}`}>
+              API: {apiStatus === 'online' ? 'online' : apiStatus === 'offline' ? 'offline' : 'kontrolujem…'}
+            </div>
+          </div>
+        </div>
+        <div className="mt-2 flex gap-2">
+          <input
+            type="text"
+            value={compareQuery}
+            onChange={(e) => setCompareQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') runCompareSearch() }}
+            placeholder="Napr. mlieko, chlieb..."
+            className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm"
+          />
+          <button
+            type="button"
+            onClick={runCompareSearch}
+            className="px-3 py-2 text-sm rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            Hľadať
+          </button>
+        </div>
+        {compareState === 'loading' && <div className="text-xs text-slate-500 mt-2">Hľadám akcie…</div>}
+        {compareState === 'error' && <div className="text-xs text-amber-700 mt-2">Porovnanie sa nepodarilo načítať.</div>}
+        {compareState === 'done' && compareResults.length === 0 && (
+          <div className="text-xs text-slate-500 mt-2">Nenašiel som žiadne výsledky.</div>
+        )}
+        {compareState === 'done' && compareResults.length > 0 && (
+          <div className="mt-2 flex flex-col gap-1.5">
+            {compareSource === 'fallback' && (
+              <div className="text-[11px] text-amber-700">Zobrazené demo porovnanie (offline fallback).</div>
+            )}
+            {compareResults.map((deal) => (
+              <div key={`cmp-${deal.store_id}-${deal.name}`} className="text-xs bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1.5">
+                <span className="font-medium text-slate-700">{deal.name}</span>
+                <span className="text-slate-500"> • {deal.store} • {deal.price?.toFixed ? deal.price.toFixed(2) : deal.price} €</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -294,6 +450,56 @@ export default function Shopping() {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Price comparator */}
+            {input.trim().length < 2 ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div className="text-xs font-semibold text-slate-600 mb-1">Porovnávač cien</div>
+                <div className="text-xs text-slate-500">Napíš aspoň 2 znaky a ukážem najlepšie akcie podľa obchodov.</div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
+                <div className="text-xs font-semibold text-emerald-700 mb-2">
+                  Porovnávač cien pre „{input.trim()}“
+                </div>
+                <div className={`text-[11px] mb-2 ${apiStatus === 'online' ? 'text-emerald-700' : apiStatus === 'offline' ? 'text-amber-700' : 'text-slate-500'}`}>
+                  API: {apiStatus === 'online' ? 'online' : apiStatus === 'offline' ? 'offline' : 'kontrolujem…'}
+                </div>
+
+                {searchState === 'loading' && (
+                  <div className="text-xs text-slate-500">Hľadám najlepšie akcie…</div>
+                )}
+
+                {searchState === 'done' && dealSuggestions.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    {dealSuggestions.map((deal) => (
+                      <div key={`${deal.store_id}-${deal.name}`} className="bg-white border border-emerald-100 rounded-lg px-2.5 py-2 text-xs">
+                        <div className="font-medium text-slate-700">{deal.name}</div>
+                        <div className="text-slate-500 mt-0.5">
+                          {deal.store} • {deal.price?.toFixed ? deal.price.toFixed(2) : deal.price} €
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {searchState === 'done' && dealSuggestions.length === 0 && (
+                  <div className="text-xs text-slate-500">Pre tento výraz som nenašiel žiadne akcie.</div>
+                )}
+
+                {searchState === 'error' && (
+                  <div className="text-xs text-amber-700">
+                    Porovnávač sa nepodarilo načítať (pravdepodobne chýba API server). Na GitHub Pages to bez backendu nefunguje.
+                  </div>
+                )}
+
+                {freshnessInfo?.all_expired && (
+                  <div className="text-[11px] text-amber-700 mt-2">
+                    Pozor: akciové dáta môžu byť po dátume platnosti.
+                  </div>
+                )}
               </div>
             )}
 

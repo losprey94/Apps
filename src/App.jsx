@@ -30,7 +30,7 @@ export default function App() {
             <Home size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-slate-900 leading-tight">Dom&#225;ci Rytmus</h1>
+            <h1 className="text-base font-bold text-slate-900 leading-tight">Domáci Rytmus</h1>
             <p className="text-xs text-slate-400 leading-tight">{activeTabData.label}</p>
           </div>
         </div>
