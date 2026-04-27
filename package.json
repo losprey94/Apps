@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "domaci:lint": "npm --prefix domaci-rytmus run lint",
+    "domaci:build": "npm --prefix domaci-rytmus run build",
+    "verify": "python -m unittest tests/test_api.py && npm run domaci:lint && npm run domaci:build"
   },
   "dependencies": {
     "lucide-react": "^1.7.0",
