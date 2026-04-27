@@ -22,6 +22,16 @@ const SUGGESTIONS = {
   ostatne: [],
 }
 
+const FALLBACK_COMPARE_DEALS = [
+  { name: 'Mlieko polotučné 1l', store: 'Lidl', store_id: 'lidl', price: 0.89 },
+  { name: 'Mlieko polotučné 1l', store: 'Tesco', store_id: 'tesco', price: 0.95 },
+  { name: 'Chlieb ražný 500g', store: 'Lidl', store_id: 'lidl', price: 0.89 },
+  { name: 'Kuracie prsia 1kg', store: 'Lidl', store_id: 'lidl', price: 4.99 },
+  { name: 'Kuracie prsia bez kosti 1kg', store: 'Kaufland', store_id: 'kaufland', price: 5.49 },
+  { name: 'Banány 1kg', store: 'Lidl', store_id: 'lidl', price: 0.99 },
+  { name: 'Banány 1kg', store: 'Kaufland', store_id: 'kaufland', price: 1.09 },
+]
+
 export default function Shopping() {
   const [items, setItems] = useLocalStorage('shopping', [])
   const [input, setInput] = useState('')
@@ -37,6 +47,15 @@ export default function Shopping() {
   const [compareQuery, setCompareQuery] = useState('')
   const [compareResults, setCompareResults] = useState([])
   const [compareState, setCompareState] = useState('idle')
+  const [compareSource, setCompareSource] = useState('api')
+
+  const fallbackSearch = (query) => {
+    const q = query.toLowerCase().trim()
+    if (!q) return []
+    return FALLBACK_COMPARE_DEALS
+      .filter((deal) => deal.name.toLowerCase().includes(q))
+      .sort((a, b) => (a.price || Infinity) - (b.price || Infinity))
+  }
 
   const toggleItem = (id) => {
     setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
@@ -107,8 +126,14 @@ export default function Shopping() {
         setSearchState('done')
       } catch (error) {
         if (error.name === 'AbortError') return
-        setSearchState('error')
-        setDealSuggestions([])
+        const fallback = fallbackSearch(input).slice(0, 3)
+        if (fallback.length > 0) {
+          setDealSuggestions(fallback)
+          setSearchState('done')
+        } else {
+          setSearchState('error')
+          setDealSuggestions([])
+        }
       }
     }, 300)
 
@@ -148,10 +173,18 @@ export default function Shopping() {
       if (!response.ok) throw new Error('search failed')
       const data = await response.json()
       setCompareResults((data.results || []).slice(0, 5))
+      setCompareSource('api')
       setCompareState('done')
     } catch {
-      setCompareResults([])
-      setCompareState('error')
+      const fallback = fallbackSearch(q).slice(0, 5)
+      if (fallback.length > 0) {
+        setCompareResults(fallback)
+        setCompareSource('fallback')
+        setCompareState('done')
+      } else {
+        setCompareResults([])
+        setCompareState('error')
+      }
     }
   }
 
@@ -233,6 +266,9 @@ export default function Shopping() {
         )}
         {compareState === 'done' && compareResults.length > 0 && (
           <div className="mt-2 flex flex-col gap-1.5">
+            {compareSource === 'fallback' && (
+              <div className="text-[11px] text-amber-700">Zobrazené demo porovnanie (offline fallback).</div>
+            )}
             {compareResults.map((deal) => (
               <div key={`cmp-${deal.store_id}-${deal.name}`} className="text-xs bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1.5">
                 <span className="font-medium text-slate-700">{deal.name}</span>
