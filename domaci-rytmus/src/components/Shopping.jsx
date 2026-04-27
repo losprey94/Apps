@@ -34,6 +34,9 @@ export default function Shopping() {
   const [searchState, setSearchState] = useState('idle')
   const [freshnessInfo, setFreshnessInfo] = useState(null)
   const [apiStatus, setApiStatus] = useState('unknown')
+  const [compareQuery, setCompareQuery] = useState('')
+  const [compareResults, setCompareResults] = useState([])
+  const [compareState, setCompareState] = useState('idle')
 
   const toggleItem = (id) => {
     setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
@@ -116,7 +119,7 @@ export default function Shopping() {
   }, [input, showForm])
 
   useEffect(() => {
-    if (!showForm) return
+    if (!showForm && apiStatus !== 'unknown') return
     let cancelled = false
 
     fetch('/api/health')
@@ -134,7 +137,23 @@ export default function Shopping() {
     return () => {
       cancelled = true
     }
-  }, [showForm])
+  }, [showForm, apiStatus])
+
+  const runCompareSearch = async () => {
+    const q = compareQuery.trim()
+    if (q.length < 2) return
+    setCompareState('loading')
+    try {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(q)}`)
+      if (!response.ok) throw new Error('search failed')
+      const data = await response.json()
+      setCompareResults((data.results || []).slice(0, 5))
+      setCompareState('done')
+    } catch {
+      setCompareResults([])
+      setCompareState('error')
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -176,6 +195,50 @@ export default function Shopping() {
             <div className="text-right mt-1 text-xs text-slate-400">
               {Math.round((doneItems.length / items.length) * 100)}% hotovo
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Visible price comparator card */}
+      <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <div className="text-sm font-semibold text-emerald-700">Porovnávač cien</div>
+            <div className={`text-[11px] ${apiStatus === 'online' ? 'text-emerald-700' : apiStatus === 'offline' ? 'text-amber-700' : 'text-slate-500'}`}>
+              API: {apiStatus === 'online' ? 'online' : apiStatus === 'offline' ? 'offline' : 'kontrolujem…'}
+            </div>
+          </div>
+        </div>
+        <div className="mt-2 flex gap-2">
+          <input
+            type="text"
+            value={compareQuery}
+            onChange={(e) => setCompareQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') runCompareSearch() }}
+            placeholder="Napr. mlieko, chlieb..."
+            className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm"
+          />
+          <button
+            type="button"
+            onClick={runCompareSearch}
+            className="px-3 py-2 text-sm rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            Hľadať
+          </button>
+        </div>
+        {compareState === 'loading' && <div className="text-xs text-slate-500 mt-2">Hľadám akcie…</div>}
+        {compareState === 'error' && <div className="text-xs text-amber-700 mt-2">Porovnanie sa nepodarilo načítať.</div>}
+        {compareState === 'done' && compareResults.length === 0 && (
+          <div className="text-xs text-slate-500 mt-2">Nenašiel som žiadne výsledky.</div>
+        )}
+        {compareState === 'done' && compareResults.length > 0 && (
+          <div className="mt-2 flex flex-col gap-1.5">
+            {compareResults.map((deal) => (
+              <div key={`cmp-${deal.store_id}-${deal.name}`} className="text-xs bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1.5">
+                <span className="font-medium text-slate-700">{deal.name}</span>
+                <span className="text-slate-500"> • {deal.store} • {deal.price?.toFixed ? deal.price.toFixed(2) : deal.price} €</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
