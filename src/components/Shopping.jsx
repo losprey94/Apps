@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Trash2, Check, ShoppingCart, X, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, Check, ShoppingCart, X, ChevronDown, ChevronRight, Search } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
 const CATEGORIES = [
@@ -9,15 +9,15 @@ const CATEGORIES = [
   { id: 'maso', label: 'Mäso & Ryby', emoji: '🥩' },
   { id: 'napoje', label: 'Nápoje', emoji: '🥤' },
   { id: 'domacnost', label: 'Domácnosť', emoji: '🧹' },
-  { id: 'ostatne', label: 'Ostatné', emoji: '🛝' },
+  { id: 'ostatne', label: 'Ostatné', emoji: '🛒' },
 ]
 
 const SUGGESTIONS = {
   zelenina: ['Jablká', 'Banány', 'Paradajky', 'Šalát', 'Mrkva', 'Cibuľa', 'Cesnak', 'Papriky', 'Uhorky', 'Zemiaky'],
   mliecne: ['Mlieko', 'Maslo', 'Syr', 'Jogurt', 'Smotana', 'Tvaroh', 'Vajcia'],
   pecivo: ['Chlieb', 'Rožky', 'Toastový chlieb', 'Bageta'],
-  maso: ['Kurace prsia', 'Bravčový bôčik', 'Mleté mäso', 'Losos', 'Klobása'],
-  napoje: ['Voda', 'Džús', 'Káva', 'Čaj', 'Pivo', 'Limo náda'],
+  maso: ['Kuracie prsia', 'Bravčový bôčik', 'Mleté mäso', 'Losos', 'Klobása'],
+  napoje: ['Voda', 'Džús', 'Káva', 'Čaj', 'Pivo', 'Limonáda'],
   domacnost: ['Toilet paper', 'Prací prášok', 'Jar', 'Sáčky na odpadky', 'Utierky'],
   ostatne: [],
 }
@@ -30,6 +30,7 @@ export default function Shopping() {
   const [showForm, setShowForm] = useState(false)
   const [expandedCategories, setExpandedCategories] = useLocalStorage('shopping-expanded', {})
   const [showDone, setShowDone] = useLocalStorage('shopping-show-done', true)
+  const [priceQuery, setPriceQuery] = useState('')
 
   const toggleItem = (id) => {
     setItems(items.map(i => i.id === id ? { ...i, done: !i.done } : i))
@@ -45,8 +46,9 @@ export default function Shopping() {
 
   const addItem = (name, cat = selectedCategory, qty = quantity) => {
     if (!name.trim()) return
+    const nextId = items.reduce((maxId, item) => Math.max(maxId, Number(item.id) || 0), 0) + 1
     setItems([...items, {
-      id: Date.now(),
+      id: nextId,
       name: name.trim(),
       category: cat,
       quantity: parseInt(qty) || 1,
@@ -78,6 +80,14 @@ export default function Shopping() {
     s => !items.some(i => i.name.toLowerCase() === s.toLowerCase())
   )
 
+  const openPriceCompare = () => {
+    const url = new URL('price-compare.html', window.location.href)
+    if (priceQuery.trim()) {
+      url.searchParams.set('q', priceQuery.trim())
+    }
+    window.location.assign(url.toString())
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {/* Stats bar */}
@@ -101,7 +111,7 @@ export default function Shopping() {
               onClick={clearDone}
               className="text-xs text-slate-400 hover:text-red-500 transition-colors border border-slate-200 hover:border-red-200 rounded-xl px-3 py-1.5"
             >
-              Vymazatť hotové
+              Vymazať hotové
             </button>
           )}
         </div>
@@ -120,6 +130,28 @@ export default function Shopping() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Price comparison quick action */}
+      <div className="bg-white rounded-2xl border border-violet-100 shadow-sm p-4">
+        <div className="text-sm font-semibold text-slate-800 mb-2">Porovnanie cien</div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Produkt na porovnanie (napr. mlieko)"
+            value={priceQuery}
+            onChange={e => setPriceQuery(e.target.value)}
+            className="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
+          />
+          <button
+            type="button"
+            onClick={openPriceCompare}
+            className="inline-flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-3 py-2.5 rounded-xl transition-colors"
+          >
+            <Search size={15} />
+            Porovnať
+          </button>
+        </div>
       </div>
 
       {/* Grouped pending items */}
