@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Droplets, Plus, Trash2, Leaf, AlertCircle, X } from 'lucide-react'
+import { Droplets, Plus, Trash2, Leaf, X } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
 const DEFAULT_PLANTS = [
@@ -26,7 +26,7 @@ function getWaterStatus(plant) {
 }
 
 const STATUS = {
-  thirsty: { label: 'Smadá', bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', barColor: 'bg-red-400' },
+  thirsty: { label: 'Smädná', bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', barColor: 'bg-red-400' },
   soon: { label: 'Čoskoro', bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', barColor: 'bg-amber-400' },
   ok: { label: 'Napojená', bg: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-cyan-200', barColor: 'bg-cyan-400' },
 }
@@ -50,8 +50,9 @@ export default function Plants() {
   const addPlant = (e) => {
     e.preventDefault()
     if (!name.trim()) return
+    const nextId = plants.reduce((maxId, plant) => Math.max(maxId, Number(plant.id) || 0), 0) + 1
     setPlants([...plants, {
-      id: Date.now(),
+      id: nextId,
       name: name.trim(),
       emoji,
       intervalDays: parseInt(interval) || 7,
@@ -84,7 +85,7 @@ export default function Plants() {
             <div className="font-semibold text-white text-sm">
               {thirstyCount} {thirstyCount === 1 ? 'rastlina potrebuje' : thirstyCount < 5 ? 'rastliny potrebujú' : 'rastlín potrebuje'} vodu
             </div>
-            <div className="text-cyan-100 text-xs mt-0.5">Nezabúbaj na ne!</div>
+            <div className="text-cyan-100 text-xs mt-0.5">Nezabúdaj na ne!</div>
           </div>
         </div>
       )}
@@ -97,7 +98,7 @@ export default function Plants() {
         </div>
         <div className="bg-white rounded-2xl p-3 text-center border border-red-100 shadow-sm">
           <div className="text-2xl font-bold text-red-500">{thirstyCount}</div>
-          <div className="text-xs text-slate-500 mt-0.5">Smadé</div>
+          <div className="text-xs text-slate-500 mt-0.5">Smädné</div>
         </div>
         <div className="bg-white rounded-2xl p-3 text-center border border-cyan-100 shadow-sm">
           <div className="text-2xl font-bold text-cyan-600">
@@ -143,10 +144,10 @@ export default function Plants() {
 
                     <div className="mt-2 text-xs text-slate-500">
                       {days === null
-                        ? 'Ĕšte nezaliata'
+                        ? 'Ešte nezaliata'
                         : daysUntil !== null && daysUntil > 0
-                          ? `ďalšie polievanie o ${daysUntil} ${daysUntil === 1 ? 'deň' : daysUntil < 5 ? 'dni' : 'dní'}`
-                          : `Oneskorene o ${Math.abs(daysUntil || 0)} dní`
+                          ? `Ďalšie polievanie o ${daysUntil} ${daysUntil === 1 ? 'deň' : daysUntil < 5 ? 'dni' : 'dní'}`
+                          : `Oneskorené o ${Math.abs(daysUntil || 0)} dní`
                       }
                     </div>
 
@@ -216,7 +217,7 @@ export default function Plants() {
             />
             <input
               type="text"
-              placeholder="Umiestnenie (volitelné)..."
+              placeholder="Umiestnenie (voliteľné)..."
               value={location}
               onChange={e => setLocation(e.target.value)}
               className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
