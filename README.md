@@ -14,3 +14,17 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Live deals feed (multi-store, auto refresh)
+
+Backend vie načítať ceny z `data/live_deals.json` (ak sú dostupné) a fallbackne na demo dataset.
+
+- Lokálny refresh:
+  - `LIVE_DEALS_URLS="https://example.com/storeA.json,https://example.com/storeB.json" python scripts/update_live_deals.py`
+- Automatický refresh:
+  - workflow `.github/workflows/refresh-live-deals.yml` beží každých 6 hodín
+  - nastav repo secret `LIVE_DEALS_URLS` (čiarkou oddelené JSON feed URL)
+
+## GitHub Pages deploy
+
+Deploy workflow `.github/workflows/deploy-pages.yml` je spúšťaný manuálne (`workflow_dispatch`) z vybranej branch v GitHub Actions.
