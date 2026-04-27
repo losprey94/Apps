@@ -36,6 +36,15 @@ class ApiSmokeTests(unittest.TestCase):
         self.assertIn("current_date", data)
         self.assertIn("timestamp", data)
 
+    def test_health_endpoint(self):
+        response = self.client.get("/api/health")
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data.get("status"), "ok")
+        self.assertIn("current_date", data)
+        self.assertIn("timestamp", data)
+        self.assertIn("data_freshness", data)
+
     def test_deals_filter_by_store(self):
         response = self.client.get("/api/deals?store=lidl&include_expired=true")
         self.assertEqual(response.status_code, 200)

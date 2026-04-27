@@ -26,7 +26,7 @@ function getWaterStatus(plant) {
 }
 
 const STATUS = {
-  thirsty: { label: 'Smadá', bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', barColor: 'bg-red-400' },
+  thirsty: { label: 'Smädná', bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', barColor: 'bg-red-400' },
   soon: { label: 'Čoskoro', bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', barColor: 'bg-amber-400' },
   ok: { label: 'Napojená', bg: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-cyan-200', barColor: 'bg-cyan-400' },
 }
@@ -98,7 +98,7 @@ export default function Plants() {
         </div>
         <div className="bg-white rounded-2xl p-3 text-center border border-red-100 shadow-sm">
           <div className="text-2xl font-bold text-red-500">{thirstyCount}</div>
-          <div className="text-xs text-slate-500 mt-0.5">Smadé</div>
+          <div className="text-xs text-slate-500 mt-0.5">Smädné</div>
         </div>
         <div className="bg-white rounded-2xl p-3 text-center border border-cyan-100 shadow-sm">
           <div className="text-2xl font-bold text-cyan-600">
@@ -146,8 +146,8 @@ export default function Plants() {
                       {days === null
                         ? 'Ešte nezaliata'
                         : daysUntil !== null && daysUntil > 0
-                          ? `ďalšie polievanie o ${daysUntil} ${daysUntil === 1 ? 'deň' : daysUntil < 5 ? 'dni' : 'dní'}`
-                          : `Oneskorene o ${Math.abs(daysUntil || 0)} dní`
+                          ? `Ďalšie polievanie o ${daysUntil} ${daysUntil === 1 ? 'deň' : daysUntil < 5 ? 'dni' : 'dní'}`
+                          : `Oneskorené o ${Math.abs(daysUntil || 0)} dní`
                       }
                     </div>
 
@@ -217,7 +217,7 @@ export default function Plants() {
             />
             <input
               type="text"
-              placeholder="Umiestnenie (volitelné)..."
+              placeholder="Umiestnenie (voliteľné)..."
               value={location}
               onChange={e => setLocation(e.target.value)}
               className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
