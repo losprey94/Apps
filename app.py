@@ -4,10 +4,8 @@ Automaticky hľadá akciové letáky online a porovnáva ceny produktov.
 """
 
 import os
-import json
-import re
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from flask import Flask, jsonify, request, send_from_directory
 from dotenv import load_dotenv
@@ -21,7 +19,7 @@ app.logger.setLevel(logging.INFO)
 # Scraper: sťahuje akciové ponuky zo slovenských obchodov
 # ---------------------------------------------------------------------------
 
-from scrapers import get_all_deals, search_deals
+from scrapers import get_all_deals, has_only_expired_deals, search_deals
 
 # ---------------------------------------------------------------------------
 # API routes
@@ -39,15 +37,18 @@ def api_search():
     if not query:
         return jsonify({"error": "Zadajte názov produktu"}), 400
 
-    results = search_deals(query)
+    include_expired = request.args.get("include_expired", "").lower() in {"1", "true", "yes"}
+    results = search_deals(query, include_expired=include_expired)
 
     # Zoradiť podľa ceny (najlacnejšie prvé)
-    results.sort(key=lambda x: x["price"])
+    results.sort(key=lambda x: x.get("price", float("inf")))
 
     return jsonify({
         "query": query,
         "results": results,
         "count": len(results),
+        "stale_demo_data": has_only_expired_deals(),
+        "current_date": datetime.now().date().isoformat(),
         "timestamp": datetime.now().isoformat(),
     })
 
@@ -71,15 +72,21 @@ def api_deals():
     """Všetky aktuálne akciové ponuky."""
     store = request.args.get("store", "")
     category = request.args.get("category", "")
-    deals = get_all_deals()
+    include_expired = request.args.get("include_expired", "").lower() in {"1", "true", "yes"}
+    deals = get_all_deals(include_expired=include_expired)
 
     if store:
         deals = [d for d in deals if d["store_id"] == store]
     if category:
         deals = [d for d in deals if d.get("category", "").lower() == category.lower()]
 
-    deals.sort(key=lambda x: x["price"])
-    return jsonify({"deals": deals, "count": len(deals)})
+    deals.sort(key=lambda x: x.get("price", float("inf")))
+    return jsonify({
+        "deals": deals,
+        "count": len(deals),
+        "stale_demo_data": has_only_expired_deals(),
+        "current_date": datetime.now().date().isoformat(),
+    })
 
 
 @app.route("/manifest.json")
@@ -96,4 +103,5 @@ def service_worker():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    debug_enabled = os.environ.get("FLASK_DEBUG", "").lower() in {"1", "true", "yes"}
+    app.run(host="0.0.0.0", port=port, debug=debug_enabled)

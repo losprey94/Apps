@@ -505,6 +505,54 @@
     const content = document.getElementById('content');
     let currentCategory = '';
     let deferredPrompt;
+    const FALLBACK_STORES = [
+        { id: 'lidl', name: 'Lidl', color: '#0050aa' },
+        { id: 'kaufland', name: 'Kaufland', color: '#e10a14' },
+        { id: 'billa', name: 'Billa', color: '#cd1719' },
+        { id: 'tesco', name: 'Tesco', color: '#00539f' },
+        { id: 'coop', name: 'COOP Jednota', color: '#e30613' },
+        { id: 'penny', name: 'Penny Market', color: '#cd1414' },
+    ];
+    const FALLBACK_DEALS = [
+        { name: 'Mlieko polotucne 1,5% 1l', price: 0.89, original_price: 1.19, unit: '1 l', store: 'Lidl', store_id: 'lidl', category: 'Mliecne vyrobky', valid_until: '2026-05-31', discount_percent: 25 },
+        { name: 'Mlieko cerstve polotucne 1l', price: 0.99, original_price: 1.29, unit: '1 l', store: 'Kaufland', store_id: 'kaufland', category: 'Mliecne vyrobky', valid_until: '2026-05-31', discount_percent: 23 },
+        { name: 'Kuracie prsia 1kg', price: 4.99, original_price: 7.49, unit: '1 kg', store: 'Lidl', store_id: 'lidl', category: 'Maso', valid_until: '2026-05-31', discount_percent: 33 },
+        { name: 'Kuracie prsia bez kosti 1kg', price: 5.49, original_price: 7.99, unit: '1 kg', store: 'Kaufland', store_id: 'kaufland', category: 'Maso', valid_until: '2026-05-31', discount_percent: 31 },
+        { name: 'Banany 1kg', price: 0.99, original_price: 1.49, unit: '1 kg', store: 'Lidl', store_id: 'lidl', category: 'Ovocie a zelenina', valid_until: '2026-05-31', discount_percent: 34 },
+        { name: 'Chlieb razny 500g', price: 0.89, original_price: 1.29, unit: '500 g', store: 'Lidl', store_id: 'lidl', category: 'Pecivo', valid_until: '2026-05-31', discount_percent: 31 },
+        { name: 'Coca-Cola 1.5l', price: 1.19, original_price: 1.79, unit: '1.5 l', store: 'Tesco', store_id: 'tesco', category: 'Napoje', valid_until: '2026-05-31', discount_percent: 34 },
+        { name: 'Nutella 350g', price: 2.89, original_price: 3.99, unit: '350 g', store: 'Billa', store_id: 'billa', category: 'Potraviny', valid_until: '2026-05-31', discount_percent: 27 },
+    ];
+
+    function normalizeText(value) {
+        return (value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+    }
+
+    function getFallbackDeals({ query = '', category = '', store = '' } = {}) {
+        const q = normalizeText(query).trim();
+        const cat = normalizeText(category).trim();
+        const st = normalizeText(store).trim();
+
+        let deals = [...FALLBACK_DEALS];
+        if (cat) deals = deals.filter(d => normalizeText(d.category) === cat);
+        if (st) deals = deals.filter(d => normalizeText(d.store_id) === st);
+        if (q) deals = deals.filter(d => normalizeText(d.name).includes(q) || normalizeText(d.category).includes(q));
+        deals.sort((a, b) => a.price - b.price);
+        return deals;
+    }
+
+    async function fetchJsonWithFallback(url, fallbackFactory) {
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('API request failed');
+            return await res.json();
+        } catch {
+            return fallbackFactory();
+        }
+    }
 
     // PWA install
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -540,13 +588,11 @@
 
         content.innerHTML = '<div class="loading"><div class="spinner"></div>Hladam najlepsie ceny...</div>';
 
-        try {
-            const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            renderResults(data.results, `Vysledky pre "${query}"`);
-        } catch {
-            content.innerHTML = '<div class="empty-state"><div class="icon">&#x26A0;</div><p>Chyba pri hladani. Skus znova.</p></div>';
-        }
+        const data = await fetchJsonWithFallback(
+            `/api/search?q=${encodeURIComponent(query)}`,
+            () => ({ results: getFallbackDeals({ query }) }),
+        );
+        renderResults(data.results || [], `Vysledky pre "${query}"`);
     }
 
     function selectCategory(cat) {
@@ -561,12 +607,10 @@
 
         content.innerHTML = '<div class="loading"><div class="spinner"></div>Nacitavam...</div>';
 
-        fetch(`/api/deals?category=${encodeURIComponent(cat)}`)
-            .then(r => r.json())
-            .then(data => renderResults(data.deals, cat))
-            .catch(() => {
-                content.innerHTML = '<div class="empty-state"><div class="icon">&#x26A0;</div><p>Chyba. Skus znova.</p></div>';
-            });
+        fetchJsonWithFallback(
+            `/api/deals?category=${encodeURIComponent(cat)}`,
+            () => ({ deals: getFallbackDeals({ category: cat }) }),
+        ).then(data => renderResults(data.deals || [], cat));
     }
 
     function renderResults(results, title) {
@@ -680,53 +724,46 @@
         doSearch();
     }
 
-    function showAllDeals() {
+    async function showAllDeals() {
         setActiveNav(1);
         content.innerHTML = '<div class="loading"><div class="spinner"></div>Nacitavam akcie...</div>';
 
-        fetch('/api/deals')
-            .then(r => r.json())
-            .then(data => renderResults(data.deals, 'Vsetky akcie'))
-            .catch(() => {
-                content.innerHTML = '<div class="empty-state"><div class="icon">&#x26A0;</div><p>Chyba. Skus znova.</p></div>';
-            });
+        const data = await fetchJsonWithFallback('/api/deals', () => ({ deals: getFallbackDeals() }));
+        renderResults(data.deals || [], 'Vsetky akcie');
     }
 
-    function showStores() {
+    async function showStores() {
         setActiveNav(2);
-        fetch('/api/stores')
-            .then(r => r.json())
-            .then(data => {
-                let html = '<div class="popular-section"><h3>Podporovane obchody</h3><div class="results-list">';
-                data.stores.forEach(store => {
-                    html += `
-                        <div class="product-card" onclick="filterByStore('${store.id}')">
-                            <div class="store-logo" style="background:${store.color}">${store.name.substring(0, 3).toUpperCase()}</div>
-                            <div class="product-info">
-                                <div class="product-name">${store.name}</div>
-                                <div class="product-meta">
-                                    <span class="product-unit">Zobrazit akcie</span>
-                                </div>
-                            </div>
-                            <div class="price-section">
-                                <span style="font-size:20px;color:var(--text-secondary)">&#x27A1;</span>
-                            </div>
+        const data = await fetchJsonWithFallback('/api/stores', () => ({ stores: FALLBACK_STORES }));
+        let html = '<div class="popular-section"><h3>Podporovane obchody</h3><div class="results-list">';
+        (data.stores || []).forEach(store => {
+            html += `
+                <div class="product-card" onclick="filterByStore('${store.id}')">
+                    <div class="store-logo" style="background:${store.color}">${store.name.substring(0, 3).toUpperCase()}</div>
+                    <div class="product-info">
+                        <div class="product-name">${store.name}</div>
+                        <div class="product-meta">
+                            <span class="product-unit">Zobrazit akcie</span>
                         </div>
-                    `;
-                });
-                html += '</div></div>';
-                content.innerHTML = html;
-            });
+                    </div>
+                    <div class="price-section">
+                        <span style="font-size:20px;color:var(--text-secondary)">&#x27A1;</span>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div></div>';
+        content.innerHTML = html;
     }
 
-    function filterByStore(storeId) {
+    async function filterByStore(storeId) {
         content.innerHTML = '<div class="loading"><div class="spinner"></div>Nacitavam...</div>';
-        fetch(`/api/deals?store=${storeId}`)
-            .then(r => r.json())
-            .then(data => {
-                const storeName = data.deals[0]?.store || storeId;
-                renderResults(data.deals, `Akcie - ${storeName}`);
-            });
+        const data = await fetchJsonWithFallback(
+            `/api/deals?store=${storeId}`,
+            () => ({ deals: getFallbackDeals({ store: storeId }) }),
+        );
+        const storeName = data.deals?.[0]?.store || storeId;
+        renderResults(data.deals || [], `Akcie - ${storeName}`);
     }
 
     function setActiveNav(index) {
@@ -737,6 +774,11 @@
 
     // Init
     showHome();
+    const initialQuery = new URLSearchParams(window.location.search).get('q');
+    if (initialQuery) {
+        searchInput.value = initialQuery;
+        doSearch();
+    }
 
     // Register service worker
     if ('serviceWorker' in navigator) {
