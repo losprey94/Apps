@@ -24,3 +24,7 @@ Backend vie načítať ceny z `data/live_deals.json` (ak sú dostupné) a fallba
 - Automatický refresh:
   - workflow `.github/workflows/refresh-live-deals.yml` beží každých 6 hodín
   - nastav repo secret `LIVE_DEALS_URLS` (čiarkou oddelené JSON feed URL)
+
+## GitHub Pages deploy
+
+Deploy workflow `.github/workflows/deploy-pages.yml` je spúšťaný manuálne (`workflow_dispatch`) z vybranej branch v GitHub Actions.
